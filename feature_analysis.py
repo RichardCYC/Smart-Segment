@@ -214,3 +214,15 @@ class FeatureAnalyzer:
                 best_splits[split.feature] = split
 
         return best_splits
+
+    def get_all_category_splits(self, feature: str) -> List[SplitResult]:
+        """獲取指定類別型變數的所有可能分群方式"""
+        if feature not in self.discrete_features:
+            raise ValueError(f"特徵 {feature} 不是類別型變數")
+
+        splits = self._analyze_discrete_feature(feature)
+
+        # 根據效應大小排序
+        splits.sort(key=lambda x: x.effect_size, reverse=True)
+
+        return splits

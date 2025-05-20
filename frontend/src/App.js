@@ -1,21 +1,23 @@
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import {
-  Alert,
-  Box,
-  Button,
-  CircularProgress,
-  Container,
-  FormControl,
-  FormControlLabel,
-  InputLabel,
-  MenuItem,
-  Paper,
-  Select,
-  Switch,
-  TextField,
-  ToggleButton,
-  ToggleButtonGroup,
-  Typography,
+    Alert,
+    Box,
+    Button,
+    CircularProgress,
+    Container,
+    FormControl,
+    FormControlLabel,
+    InputLabel,
+    MenuItem,
+    Paper,
+    Select,
+    Switch,
+    Tab,
+    Tabs,
+    TextField,
+    ToggleButton,
+    ToggleButtonGroup,
+    Typography,
 } from '@mui/material';
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
@@ -45,6 +47,10 @@ function App() {
   const [significanceLevel, setSignificanceLevel] = useState('0.05');
   const [sortMode, setSortMode] = useState('impact');
   const [showNonSignificant, setShowNonSignificant] = useState(true);
+  const [activeTab, setActiveTab] = useState(0);
+  const [categoryResults, setCategoryResults] = useState(null);
+  const [selectedFeature, setSelectedFeature] = useState('');
+  const [discreteFeatures, setDiscreteFeatures] = useState([]);
 
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
@@ -84,6 +90,38 @@ function App() {
         setColumns([]);
       };
       reader.readAsText(file);
+    }
+  };
+
+  const handleTargetColumnChange = async (e) => {
+    const newTargetColumn = e.target.value;
+    setTargetColumn(newTargetColumn);
+
+    if (file && newTargetColumn) {
+      setLoading(true);
+      setError('');
+
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('targetColumn', newTargetColumn);
+
+      try {
+        const response = await fetch('http://localhost:5000/api/discrete-features', {
+          method: 'POST',
+          body: formData,
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          setDiscreteFeatures(data.discrete_features);
+        } else {
+          setError(data.error || '獲取類別型變數列表失敗');
+        }
+      } catch (err) {
+        setError('無法連接到服務器');
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -149,6 +187,52 @@ function App() {
     }
   };
 
+  const handleCategoryAnalyze = async () => {
+    if (!file || !targetColumn || !selectedFeature) {
+      setError('請選擇文件、目標變量列和特徵列');
+      return;
+    }
+
+    // 驗證顯著水準
+    const alpha = parseFloat(significanceLevel);
+    if (isNaN(alpha) || alpha <= 0 || alpha >= 1) {
+      setError('顯著水準必須是0到1之間的數字');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    setCategoryResults(null);
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('targetColumn', targetColumn);
+    formData.append('feature', selectedFeature);
+    formData.append('significanceLevel', significanceLevel);
+
+    try {
+      const response = await fetch('http://localhost:5000/api/category-splits', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setCategoryResults(data.results);
+      } else {
+        setError(data.error || '分析過程中發生錯誤');
+      }
+    } catch (err) {
+      setError('無法連接到服務器');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTabChange = (event, newValue) => {
+    setActiveTab(newValue);
+  };
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
@@ -186,7 +270,7 @@ function App() {
                   <Select
                     value={targetColumn}
                     label="選擇目標變量列"
-                    onChange={(e) => setTargetColumn(e.target.value)}
+                    onChange={handleTargetColumnChange}
                   >
                     {columns.map((column) => (
                       <MenuItem key={column} value={column}>
@@ -207,66 +291,105 @@ function App() {
                 fullWidth
               />
 
-              <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
-                <ToggleButtonGroup
-                  value={viewMode}
-                  exclusive
-                  onChange={handleViewModeChange}
-                  aria-label="視圖模式"
-                >
-                  <ToggleButton value="best_per_feature" aria-label="每個特徵最佳分割">
-                    每個特徵最佳分割
-                  </ToggleButton>
-                  <ToggleButton value="top_5_global" aria-label="全局前5最佳分割">
-                    全局前5最佳分割
-                  </ToggleButton>
-                </ToggleButtonGroup>
+              <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                <Tabs value={activeTab} onChange={handleTabChange}>
+                  <Tab label="一般分析" />
+                  <Tab label="類別型變數分析" />
+                </Tabs>
               </Box>
 
-              <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
-                <ToggleButtonGroup
-                  value={sortMode}
-                  exclusive
-                  onChange={handleSortModeChange}
-                  aria-label="排序模式"
-                >
-                  <ToggleButton value="impact" aria-label="按效應大小排序">
-                    按效應大小排序
-                  </ToggleButton>
-                  <ToggleButton value="p_value" aria-label="按p值排序">
-                    按p值排序
-                  </ToggleButton>
-                </ToggleButtonGroup>
-              </Box>
+              {activeTab === 0 ? (
+                <>
+                  <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+                    <ToggleButtonGroup
+                      value={viewMode}
+                      exclusive
+                      onChange={handleViewModeChange}
+                      aria-label="視圖模式"
+                    >
+                      <ToggleButton value="best_per_feature" aria-label="每個特徵最佳分割">
+                        每個特徵最佳分割
+                      </ToggleButton>
+                      <ToggleButton value="top_5_global" aria-label="全局前5最佳分割">
+                        全局前5最佳分割
+                      </ToggleButton>
+                    </ToggleButtonGroup>
+                  </Box>
 
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={showNonSignificant}
-                    onChange={(e) => setShowNonSignificant(e.target.checked)}
+                  <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+                    <ToggleButtonGroup
+                      value={sortMode}
+                      exclusive
+                      onChange={handleSortModeChange}
+                      aria-label="排序模式"
+                    >
+                      <ToggleButton value="impact" aria-label="按效應大小排序">
+                        按效應大小排序
+                      </ToggleButton>
+                      <ToggleButton value="p_value" aria-label="按p值排序">
+                        按p值排序
+                      </ToggleButton>
+                    </ToggleButtonGroup>
+                  </Box>
+
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={showNonSignificant}
+                        onChange={(e) => setShowNonSignificant(e.target.checked)}
+                      />
+                    }
+                    label="顯示非顯著結果"
                   />
-                }
-                label="顯示非顯著結果"
-              />
 
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={handleAnalyze}
-                disabled={loading || !file || !targetColumn}
-              >
-                {loading ? <CircularProgress size={24} /> : '開始分析'}
-              </Button>
+                  <Button
+                    variant="contained"
+                    onClick={handleAnalyze}
+                    disabled={loading || !file || !targetColumn}
+                  >
+                    {loading ? <CircularProgress size={24} /> : '分析'}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <FormControl fullWidth>
+                    <InputLabel>選擇類別型變數</InputLabel>
+                    <Select
+                      value={selectedFeature}
+                      label="選擇類別型變數"
+                      onChange={(e) => setSelectedFeature(e.target.value)}
+                    >
+                      {discreteFeatures.map((feature) => (
+                        <MenuItem key={feature} value={feature}>
+                          {feature}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+
+                  <Button
+                    variant="contained"
+                    onClick={handleCategoryAnalyze}
+                    disabled={loading || !file || !targetColumn || !selectedFeature}
+                  >
+                    {loading ? <CircularProgress size={24} /> : '分析類別型變數'}
+                  </Button>
+                </>
+              )}
             </Box>
           </Paper>
 
           {error && (
-            <Alert severity="error" sx={{ mb: 3 }}>
+            <Alert severity="error" sx={{ mb: 2 }}>
               {error}
             </Alert>
           )}
 
-          {results && <FeatureResults results={results} />}
+          {activeTab === 0 ? (
+            results && <FeatureResults results={results} />
+          ) : (
+            categoryResults && <FeatureResults results={categoryResults} />
+          )}
         </Box>
       </Container>
     </ThemeProvider>
