@@ -23,6 +23,8 @@ class SplitResult:
     p_value: float
     is_significant: bool
     test_method: str
+    group_a_count: int
+    group_b_count: int
 
 
 class FeatureAnalyzer:
@@ -153,6 +155,8 @@ class FeatureAnalyzer:
             p_value=p_value,
             is_significant=p_value < self.significance_level,
             test_method=test_method,
+            group_a_count=n_a,
+            group_b_count=n_b,
         )
 
     def _analyze_discrete_feature(self, feature: str) -> List[SplitResult]:

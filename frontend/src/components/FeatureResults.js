@@ -14,18 +14,25 @@ import {
   Typography
 } from '@mui/material';
 import React from 'react';
-import { Bar, BarChart, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, XAxis, YAxis } from 'recharts';
+import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 
 const FeatureResults = ({ results }) => {
   // 將結果分為顯著和不顯著兩組
   const significantResults = results.filter(result => result.is_significant);
   const nonSignificantResults = results.filter(result => !result.is_significant);
 
-  // 準備圖表數據
-  const chartData = results.map(result => ({
+  // 依照顯著性優先排序 chartData，順序與上方表格一致
+  const sortedResults = [
+    ...results.filter(r => r.is_significant),
+    ...results.filter(r => !r.is_significant)
+  ];
+  const chartData = sortedResults.map(result => ({
     name: result.feature,
+    rule: result.rule,
     groupA: result.group_a_rate,
     groupB: result.group_b_rate,
+    group_a_count: typeof result.group_a_count === 'number' ? result.group_a_count : '-',
+    group_b_count: typeof result.group_b_count === 'number' ? result.group_b_count : '-',
     isSignificant: result.is_significant,
   }));
 
@@ -161,24 +168,63 @@ const FeatureResults = ({ results }) => {
         <Typography variant="h6" gutterBottom>
           各特徵分割效果比較
         </Typography>
-        <Box sx={{ height: 400 }}>
+        <Box sx={{ height: 420 }}>
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData}>
+            <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
+              <XAxis
+                dataKey="rule"
+                tick={{ fontSize: 13, wordBreak: 'break-all', whiteSpace: 'pre-line' }}
+                interval={0}
+                angle={-10}
+                textAnchor="end"
+                height={70}
+              />
               <YAxis />
-              <RechartsTooltip />
+              <Legend formatter={(value) => {
+                if (value === 'groupA') return '組別A（大於分割點/等於）';
+                if (value === 'groupB') return '組別B（小於等於分割點/不等於）';
+                return value;
+              }} />
               <Bar
                 dataKey="groupA"
                 fill="#8884d8"
-                name="組別A (Y=True%)"
+                name="groupA"
                 fillOpacity={0.8}
+                label={({ x, y, width, value, index }) => {
+                  const count = chartData[index].group_a_count;
+                  return (
+                    <text
+                      x={x + width / 2}
+                      y={y - 8}
+                      fill="#8884d8"
+                      textAnchor="middle"
+                      fontSize="12"
+                    >
+                      {`${value.toFixed(2)}% (n=${count})`}
+                    </text>
+                  );
+                }}
               />
               <Bar
                 dataKey="groupB"
                 fill="#82ca9d"
-                name="組別B (Y=True%)"
+                name="groupB"
                 fillOpacity={0.8}
+                label={({ x, y, width, value, index }) => {
+                  const count = chartData[index].group_b_count;
+                  return (
+                    <text
+                      x={x + width / 2}
+                      y={y - 24}
+                      fill="#82ca9d"
+                      textAnchor="middle"
+                      fontSize="12"
+                    >
+                      {`${value.toFixed(2)}% (n=${count})`}
+                    </text>
+                  );
+                }}
               />
             </BarChart>
           </ResponsiveContainer>

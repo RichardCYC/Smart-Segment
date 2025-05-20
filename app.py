@@ -136,6 +136,8 @@ def analyze_csv():
                     "p_value": round(split.p_value, 4),
                     "is_significant": bool(split.is_significant),
                     "test_method": split.test_method,
+                    "group_a_count": split.group_a_count,
+                    "group_b_count": split.group_b_count,
                     "summary": f"特徵 {split.feature} ({split.feature_type}) 的最佳分割點為 {split.rule}，"
                     f"效應大小為 {split.effect_size:.2f}%，"
                     f"p值為 {split.p_value:.4f}，"
@@ -158,6 +160,8 @@ def analyze_csv():
                     "p_value": round(split.p_value, 4),
                     "is_significant": bool(split.is_significant),
                     "test_method": split.test_method,
+                    "group_a_count": split.group_a_count,
+                    "group_b_count": split.group_b_count,
                     "summary": f"特徵 {split.feature} ({split.feature_type}) 的分割點 {split.rule}，"
                     f"效應大小為 {split.effect_size:.2f}%，"
                     f"p值為 {split.p_value:.4f}，"
