@@ -135,9 +135,11 @@ def analyze_csv():
                     "effect_size": round(split.effect_size, 2),
                     "p_value": round(split.p_value, 4),
                     "is_significant": bool(split.is_significant),
+                    "test_method": split.test_method,
                     "summary": f"特徵 {split.feature} ({split.feature_type}) 的最佳分割點為 {split.rule}，"
                     f"效應大小為 {split.effect_size:.2f}%，"
-                    f"p值為 {split.p_value:.4f}",
+                    f"p值為 {split.p_value:.4f}，"
+                    f"使用 {split.test_method} 進行檢定",
                 }
                 for split in results.values()
                 if show_non_significant or split.is_significant
@@ -155,9 +157,11 @@ def analyze_csv():
                     "effect_size": round(split.effect_size, 2),
                     "p_value": round(split.p_value, 4),
                     "is_significant": bool(split.is_significant),
+                    "test_method": split.test_method,
                     "summary": f"特徵 {split.feature} ({split.feature_type}) 的分割點 {split.rule}，"
                     f"效應大小為 {split.effect_size:.2f}%，"
-                    f"p值為 {split.p_value:.4f}",
+                    f"p值為 {split.p_value:.4f}，"
+                    f"使用 {split.test_method} 進行檢定",
                 }
                 for split in results
                 if show_non_significant or split.is_significant

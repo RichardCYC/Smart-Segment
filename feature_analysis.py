@@ -22,6 +22,7 @@ class SplitResult:
     effect_size: float
     p_value: float
     is_significant: bool
+    test_method: str
 
 
 class FeatureAnalyzer:
@@ -64,38 +65,83 @@ class FeatureAnalyzer:
             group_a = self.df[self.df[feature] > split_value]
             group_b = self.df[self.df[feature] <= split_value]
             rule = f"{feature} > {split_value:.2f}"
+            # 計算各組的目標變量比率
+            group_a_rate = group_a[self.target_col].mean()
+            group_b_rate = group_b[self.target_col].mean()
+            # 計算效應大小（絕對差異）
+            effect_size = abs(group_a_rate - group_b_rate)
+
+            # 根據資料集大小動態決定檢定方法
+            n_a = len(group_a)
+            n_b = len(group_b)
+            total_n = len(self.df)
+
+            # 如果總樣本數小於30，使用Mann-Whitney U test
+            if total_n < 30:
+                stat, p_value = stats.mannwhitneyu(
+                    group_a[self.target_col],
+                    group_b[self.target_col],
+                    alternative="two-sided",
+                )
+                test_method = "Mann-Whitney U test (n < 30)"
+            # 如果任一組樣本數小於30，使用Mann-Whitney U test
+            elif n_a < 30 or n_b < 30:
+                stat, p_value = stats.mannwhitneyu(
+                    group_a[self.target_col],
+                    group_b[self.target_col],
+                    alternative="two-sided",
+                )
+                test_method = "Mann-Whitney U test (group size < 30)"
+            # 如果資料分布嚴重偏斜，使用Mann-Whitney U test
+            elif (
+                abs(stats.skew(group_a[self.target_col])) > 2
+                or abs(stats.skew(group_b[self.target_col])) > 2
+            ):
+                stat, p_value = stats.mannwhitneyu(
+                    group_a[self.target_col],
+                    group_b[self.target_col],
+                    alternative="two-sided",
+                )
+                test_method = "Mann-Whitney U test (skewed data)"
+            # 其他情況使用Welch's t-test
+            else:
+                stat, p_value = stats.ttest_ind(
+                    group_a[self.target_col],
+                    group_b[self.target_col],
+                    equal_var=False,
+                )
+                test_method = "Welch's t-test"
         else:
             # 離散型特徵的分割（one-vs-rest）
             group_a = self.df[self.df[feature] == split_value]
             group_b = self.df[self.df[feature] != split_value]
             rule = f"{feature} = {split_value}"
+            group_a_rate = group_a[self.target_col].mean()
+            group_b_rate = group_b[self.target_col].mean()
+            effect_size = abs(group_a_rate - group_b_rate)
 
-        # 計算各組的目標變量比率
-        group_a_rate = group_a[self.target_col].mean()
-        group_b_rate = group_b[self.target_col].mean()
+            # 根據資料集大小動態決定檢定方法
+            n_a = len(group_a)
+            n_b = len(group_b)
+            total_n = len(self.df)
 
-        # 計算效應大小（絕對差異）
-        effect_size = abs(group_a_rate - group_b_rate)
-
-        # 執行統計檢定
-        if self.df[self.target_col].dtype in ["int64", "float64"]:
-            # 對於數值型目標變量，使用 Mann-Whitney U 檢定
-            stat, p_value = stats.mannwhitneyu(
-                group_a[self.target_col],
-                group_b[self.target_col],
-                alternative="two-sided",
-            )
-        else:
-            # 對於類別型目標變量，使用卡方檢定
+            # 如果任一組的期望頻數小於5，使用Fisher's exact test
             contingency = pd.crosstab(
-                (
-                    self.df[feature] == split_value
-                    if feature_type == "discrete"
-                    else self.df[feature] > split_value
-                ),
+                self.df[feature] == split_value,
                 self.df[self.target_col],
             )
-            chi2, p_value, _, _ = stats.chi2_contingency(contingency)
+            expected = stats.contingency.expected_freq(contingency)
+            if np.any(expected < 5):
+                oddsratio, p_value = stats.fisher_exact(contingency)
+                test_method = "Fisher's exact test (expected freq < 5)"
+            # 如果總樣本數小於30，使用Fisher's exact test
+            elif total_n < 30:
+                oddsratio, p_value = stats.fisher_exact(contingency)
+                test_method = "Fisher's exact test (n < 30)"
+            # 其他情況使用Chi-square test
+            else:
+                chi2, p_value, _, _ = stats.chi2_contingency(contingency)
+                test_method = "Chi-square test"
 
         return SplitResult(
             feature=feature,
@@ -106,6 +152,7 @@ class FeatureAnalyzer:
             effect_size=effect_size * 100,
             p_value=p_value,
             is_significant=p_value < self.significance_level,
+            test_method=test_method,
         )
 
     def _analyze_discrete_feature(self, feature: str) -> List[SplitResult]:

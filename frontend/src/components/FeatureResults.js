@@ -1,18 +1,20 @@
+import InfoIcon from '@mui/icons-material/Info';
 import {
-    Box,
-    Chip,
-    Divider,
-    Paper,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
-    Typography,
+  Box,
+  Chip,
+  Divider,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Tooltip,
+  Typography
 } from '@mui/material';
 import React from 'react';
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Bar, BarChart, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 
 const FeatureResults = ({ results }) => {
   // 將結果分為顯著和不顯著兩組
@@ -27,12 +29,22 @@ const FeatureResults = ({ results }) => {
     isSignificant: result.is_significant,
   }));
 
+  // 統計檢定方法的說明
+  const testMethodDescriptions = {
+    "Welch's t-test": "適用於兩組獨立樣本的平均值比較，不假設兩組變異數相等",
+    "Mann-Whitney U test (n < 30)": "適用於小樣本(n<30)的兩組獨立樣本比較，不假設常態分配",
+    "Mann-Whitney U test (group size < 30)": "適用於任一組樣本數小於30的情況，不假設常態分配",
+    "Mann-Whitney U test (skewed data)": "適用於資料分布嚴重偏斜的情況，不假設常態分配",
+    "Chi-square test": "適用於類別變數的獨立性檢定，要求期望頻數大於5",
+    "Fisher's exact test (expected freq < 5)": "適用於期望頻數小於5的類別變數獨立性檢定",
+    "Fisher's exact test (n < 30)": "適用於小樣本(n<30)的類別變數獨立性檢定"
+  };
+
   return (
     <Box sx={{ mt: 4 }}>
       <Typography variant="h5" gutterBottom>
         特徵分析結果
       </Typography>
-
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
@@ -45,6 +57,7 @@ const FeatureResults = ({ results }) => {
               <TableCell>效應大小</TableCell>
               <TableCell>P值</TableCell>
               <TableCell>顯著性</TableCell>
+              <TableCell>統計檢定方法</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -68,13 +81,32 @@ const FeatureResults = ({ results }) => {
                     size="small"
                   />
                 </TableCell>
+                <TableCell>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <Typography variant="body2">
+                      {result.test_method}
+                    </Typography>
+                    <Tooltip title={testMethodDescriptions[result.test_method] || "無說明"}>
+                      <InfoIcon
+                        sx={{
+                          fontSize: '1rem',
+                          color: 'text.secondary',
+                          opacity: 0.7,
+                          '&:hover': {
+                            opacity: 1
+                          }
+                        }}
+                      />
+                    </Tooltip>
+                  </Box>
+                </TableCell>
               </TableRow>
             ))}
 
             {/* 分隔線 */}
             {significantResults.length > 0 && nonSignificantResults.length > 0 && (
               <TableRow>
-                <TableCell colSpan={8}>
+                <TableCell colSpan={9}>
                   <Divider />
                 </TableCell>
               </TableRow>
@@ -100,6 +132,25 @@ const FeatureResults = ({ results }) => {
                     size="small"
                   />
                 </TableCell>
+                <TableCell>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <Typography variant="body2">
+                      {result.test_method}
+                    </Typography>
+                    <Tooltip title={testMethodDescriptions[result.test_method] || "無說明"}>
+                      <InfoIcon
+                        sx={{
+                          fontSize: '1rem',
+                          color: 'text.secondary',
+                          opacity: 0.7,
+                          '&:hover': {
+                            opacity: 1
+                          }
+                        }}
+                      />
+                    </Tooltip>
+                  </Box>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -116,7 +167,7 @@ const FeatureResults = ({ results }) => {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
               <YAxis />
-              <Tooltip />
+              <RechartsTooltip />
               <Bar
                 dataKey="groupA"
                 fill="#8884d8"
