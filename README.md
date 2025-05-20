@@ -1,48 +1,48 @@
-# CSV Binary Segmentation Helper
+# Smart Segment
 
-這是一個網頁工具，用於分析CSV檔案中的特徵如何區分二元目標變量。
+A web-based tool for analyzing and optimizing feature segmentation in CSV files for binary classification tasks.
 
-## 功能特點
+## Features
 
-- 上傳CSV檔案並指定二元目標變量
-- 自動檢測特徵類型（離散/連續）
-- 計算特徵重要性分數
-- 對連續特徵進行最佳分段
-- 提供特徵排名和詳細分析報告
+- Upload CSV files and specify binary target variables
+- Automatic feature type detection (discrete/continuous)
+- Calculate feature importance scores
+- Optimize segmentation for continuous features
+- Provide feature rankings and detailed analysis reports
 
-## 安裝說明
+## Installation
 
-1. 安裝Python依賴：
+1. Install Python dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
-2. 安裝前端依賴：
+2. Install frontend dependencies:
 ```bash
 cd frontend
 npm install
 ```
 
-3. 啟動後端服務器：
+3. Start the backend server:
 ```bash
 python app.py
 ```
 
-4. 啟動前端開發服務器：
+4. Start the frontend development server:
 ```bash
 cd frontend
 npm start
 ```
 
-## 使用說明
+## Usage
 
-1. 打開瀏覽器訪問 http://localhost:3000
-2. 上傳CSV檔案
-3. 選擇目標變量列
-4. 查看分析結果
+1. Open your browser and visit http://localhost:3000
+2. Upload your CSV file
+3. Select the target variable column
+4. View the analysis results
 
-## 技術棧
+## Tech Stack
 
-- 後端：Python Flask
-- 前端：React
-- 數據處理：Pandas, NumPy, scikit-learn
+- Backend: Python Flask
+- Frontend: React
+- Data Processing: Pandas, NumPy, scikit-learn

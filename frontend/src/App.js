@@ -55,23 +55,23 @@ function App() {
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
     if (file) {
-      // 檢查文件大小（16MB限制）
+      // Check file size (16MB limit)
       if (file.size > 16 * 1024 * 1024) {
-        setError('文件大小不能超過16MB');
+        setError('File size cannot exceed 16MB');
         setFile(null);
         return;
       }
 
-      // 檢查文件類型
+      // Check file type
       if (!file.name.toLowerCase().endsWith('.csv')) {
-        setError('只允許上傳CSV文件');
+        setError('Only CSV files are allowed');
         setFile(null);
         return;
       }
 
       setFile(file);
       setError('');
-      // 讀取CSV文件頭部來獲取列名
+      // Read CSV file header to get column names
       const reader = new FileReader();
       reader.onload = (e) => {
         try {
@@ -79,13 +79,13 @@ function App() {
           const headers = text.split('\n')[0].split(',');
           setColumns(headers);
         } catch (err) {
-          setError('無法讀取CSV文件');
+          setError('Unable to read CSV file');
           setFile(null);
           setColumns([]);
         }
       };
       reader.onerror = () => {
-        setError('文件讀取錯誤');
+        setError('File reading error');
         setFile(null);
         setColumns([]);
       };
@@ -115,10 +115,10 @@ function App() {
         if (data.success) {
           setDiscreteFeatures(data.discrete_features);
         } else {
-          setError(data.error || '獲取類別型變數列表失敗');
+          setError(data.error || 'Failed to get discrete features list');
         }
       } catch (err) {
-        setError('無法連接到服務器');
+        setError('Unable to connect to server');
       } finally {
         setLoading(false);
       }
@@ -145,14 +145,14 @@ function App() {
 
   const handleAnalyze = async () => {
     if (!file || !targetColumn) {
-      setError('請選擇文件和目標變量列');
+      setError('Please select a file and target variable column');
       return;
     }
 
-    // 驗證顯著水準
+    // Validate significance level
     const alpha = parseFloat(significanceLevel);
     if (isNaN(alpha) || alpha <= 0 || alpha >= 1) {
-      setError('顯著水準必須是0到1之間的數字');
+      setError('Significance level must be a number between 0 and 1');
       return;
     }
 
@@ -178,10 +178,10 @@ function App() {
       if (data.success) {
         setResults(data.results);
       } else {
-        setError(data.error || '分析過程中發生錯誤');
+        setError(data.error || 'Error occurred during analysis');
       }
     } catch (err) {
-      setError('無法連接到服務器');
+      setError('Unable to connect to server');
     } finally {
       setLoading(false);
     }
@@ -189,14 +189,14 @@ function App() {
 
   const handleCategoryAnalyze = async () => {
     if (!file || !targetColumn || !selectedFeature) {
-      setError('請選擇文件、目標變量列和特徵列');
+      setError('Please select a file, target variable column, and feature column');
       return;
     }
 
-    // 驗證顯著水準
+    // Validate significance level
     const alpha = parseFloat(significanceLevel);
     if (isNaN(alpha) || alpha <= 0 || alpha >= 1) {
-      setError('顯著水準必須是0到1之間的數字');
+      setError('Significance level must be a number between 0 and 1');
       return;
     }
 
@@ -220,10 +220,10 @@ function App() {
       if (data.success) {
         setCategoryResults(data.results);
       } else {
-        setError(data.error || '分析過程中發生錯誤');
+        setError(data.error || 'Error occurred during analysis');
       }
     } catch (err) {
-      setError('無法連接到服務器');
+      setError('Unable to connect to server');
     } finally {
       setLoading(false);
     }
@@ -239,7 +239,7 @@ function App() {
       <Container maxWidth="lg">
         <Box sx={{ my: 4 }}>
           <Typography variant="h4" component="h1" gutterBottom align="center">
-            CSV二元分段分析工具
+            Smart Segment
           </Typography>
 
           <Paper sx={{ p: 3, mb: 3 }}>
@@ -249,7 +249,7 @@ function App() {
                 component="label"
                 startIcon={<CloudUploadIcon />}
               >
-                上傳CSV文件
+                Upload CSV file
                 <input
                   type="file"
                   hidden
@@ -260,16 +260,16 @@ function App() {
 
               {file && (
                 <Typography variant="body2" color="text.secondary">
-                  已選擇文件: {file.name}
+                  Selected file: {file.name}
                 </Typography>
               )}
 
               {columns.length > 0 && (
                 <FormControl fullWidth>
-                  <InputLabel>選擇目標變量列</InputLabel>
+                  <InputLabel>Select target variable column</InputLabel>
                   <Select
                     value={targetColumn}
-                    label="選擇目標變量列"
+                    label="Select target variable column"
                     onChange={handleTargetColumnChange}
                   >
                     {columns.map((column) => (
@@ -282,19 +282,19 @@ function App() {
               )}
 
               <TextField
-                label="顯著水準 (α)"
+                label="Significance level (α)"
                 type="number"
                 value={significanceLevel}
                 onChange={(e) => setSignificanceLevel(e.target.value)}
                 inputProps={{ step: "0.01", min: "0.01", max: "0.99" }}
-                helperText="請輸入0到1之間的數字，例如：0.05"
+                helperText="Please enter a number between 0 and 1, e.g., 0.05"
                 fullWidth
               />
 
               <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
                 <Tabs value={activeTab} onChange={handleTabChange}>
-                  <Tab label="一般分析" />
-                  <Tab label="類別型變數分析" />
+                  <Tab label="General Analysis" />
+                  <Tab label="Category Variable Analysis" />
                 </Tabs>
               </Box>
 
@@ -305,13 +305,13 @@ function App() {
                       value={viewMode}
                       exclusive
                       onChange={handleViewModeChange}
-                      aria-label="視圖模式"
+                      aria-label="View mode"
                     >
-                      <ToggleButton value="best_per_feature" aria-label="每個特徵最佳分割">
-                        每個特徵最佳分割
+                      <ToggleButton value="best_per_feature" aria-label="Best split per feature">
+                        Best split per feature
                       </ToggleButton>
-                      <ToggleButton value="top_5_global" aria-label="全局前5最佳分割">
-                        全局前5最佳分割
+                      <ToggleButton value="top_5_global" aria-label="Top 5 global best splits">
+                        Top 5 global best splits
                       </ToggleButton>
                     </ToggleButtonGroup>
                   </Box>
@@ -321,13 +321,13 @@ function App() {
                       value={sortMode}
                       exclusive
                       onChange={handleSortModeChange}
-                      aria-label="排序模式"
+                      aria-label="Sort mode"
                     >
-                      <ToggleButton value="impact" aria-label="按效應大小排序">
-                        按效應大小排序
+                      <ToggleButton value="impact" aria-label="Sort by effect size">
+                        Sort by effect size
                       </ToggleButton>
-                      <ToggleButton value="p_value" aria-label="按p值排序">
-                        按p值排序
+                      <ToggleButton value="p_value" aria-label="Sort by p value">
+                        Sort by p value
                       </ToggleButton>
                     </ToggleButtonGroup>
                   </Box>
@@ -339,7 +339,7 @@ function App() {
                         onChange={(e) => setShowNonSignificant(e.target.checked)}
                       />
                     }
-                    label="顯示非顯著結果"
+                    label="Show non-significant results"
                   />
 
                   <Button
@@ -347,16 +347,16 @@ function App() {
                     onClick={handleAnalyze}
                     disabled={loading || !file || !targetColumn}
                   >
-                    {loading ? <CircularProgress size={24} /> : '分析'}
+                    {loading ? <CircularProgress size={24} /> : 'Analyze'}
                   </Button>
                 </>
               ) : (
                 <>
                   <FormControl fullWidth>
-                    <InputLabel>選擇類別型變數</InputLabel>
+                    <InputLabel>Select category variable</InputLabel>
                     <Select
                       value={selectedFeature}
-                      label="選擇類別型變數"
+                      label="Select category variable"
                       onChange={(e) => setSelectedFeature(e.target.value)}
                     >
                       {discreteFeatures.map((feature) => (
@@ -372,7 +372,7 @@ function App() {
                     onClick={handleCategoryAnalyze}
                     disabled={loading || !file || !targetColumn || !selectedFeature}
                   >
-                    {loading ? <CircularProgress size={24} /> : '分析類別型變數'}
+                    {loading ? <CircularProgress size={24} /> : 'Analyze category variable'}
                   </Button>
                 </>
               )}
