@@ -23,6 +23,7 @@ import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import React, { useState } from 'react';
 import FeatureResults from './components/FeatureResults';
+import FeedbackForm from './components/FeedbackForm';
 
 const theme = createTheme({
   palette: {
@@ -390,6 +391,8 @@ function App() {
           ) : (
             categoryResults && <FeatureResults results={categoryResults} />
           )}
+
+          <FeedbackForm />
         </Box>
       </Container>
     </ThemeProvider>
