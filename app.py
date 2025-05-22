@@ -103,16 +103,17 @@ def analyze_csv():
                 400,
             )
 
-        # 確保目標變量是二元的
-        try:
-            df[target_column] = df[target_column].astype(bool)
-        except Exception as e:
-            return (
-                jsonify(
-                    {"success": False, "error": f"目標列轉換為布爾值失敗: {str(e)}"}
-                ),
-                400,
-            )
+        # 僅當目標變量是二元型時才轉換為 bool
+        if df[target_column].nunique() == 2:
+            try:
+                df[target_column] = df[target_column].astype(bool)
+            except Exception as e:
+                return (
+                    jsonify(
+                        {"success": False, "error": f"目標列轉換為布爾值失敗: {str(e)}"}
+                    ),
+                    400,
+                )
 
         # 創建特徵分析器
         analyzer = FeatureAnalyzer(
@@ -240,16 +241,17 @@ def get_category_splits():
                 400,
             )
 
-        # 確保目標變量是二元的
-        try:
-            df[target_column] = df[target_column].astype(bool)
-        except Exception as e:
-            return (
-                jsonify(
-                    {"success": False, "error": f"目標列轉換為布爾值失敗: {str(e)}"}
-                ),
-                400,
-            )
+        # 僅當目標變量是二元型時才轉換為 bool
+        if df[target_column].nunique() == 2:
+            try:
+                df[target_column] = df[target_column].astype(bool)
+            except Exception as e:
+                return (
+                    jsonify(
+                        {"success": False, "error": f"目標列轉換為布爾值失敗: {str(e)}"}
+                    ),
+                    400,
+                )
 
         # 創建特徵分析器
         analyzer = FeatureAnalyzer(

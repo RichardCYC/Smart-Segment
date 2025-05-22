@@ -25,6 +25,7 @@ class SplitResult:
     test_method: str
     group_a_count: int
     group_b_count: int
+    target_type: Literal["binary", "continuous"]
 
 
 class FeatureAnalyzer:
@@ -78,41 +79,100 @@ class FeatureAnalyzer:
             n_b = len(group_b)
             total_n = len(self.df)
 
-            # 如果總樣本數小於30，使用Mann-Whitney U test
-            if total_n < 30:
-                stat, p_value = stats.mannwhitneyu(
-                    group_a[self.target_col],
-                    group_b[self.target_col],
-                    alternative="two-sided",
-                )
-                test_method = "Mann-Whitney U test (n < 30)"
-            # 如果任一組樣本數小於30，使用Mann-Whitney U test
-            elif n_a < 30 or n_b < 30:
-                stat, p_value = stats.mannwhitneyu(
-                    group_a[self.target_col],
-                    group_b[self.target_col],
-                    alternative="two-sided",
-                )
-                test_method = "Mann-Whitney U test (group size < 30)"
-            # 如果資料分布嚴重偏斜，使用Mann-Whitney U test
-            elif (
-                abs(stats.skew(group_a[self.target_col])) > 2
-                or abs(stats.skew(group_b[self.target_col])) > 2
-            ):
-                stat, p_value = stats.mannwhitneyu(
-                    group_a[self.target_col],
-                    group_b[self.target_col],
-                    alternative="two-sided",
-                )
-                test_method = "Mann-Whitney U test (skewed data)"
-            # 其他情況使用Welch's t-test
+            # 檢查目標變量是否為二元變量
+            is_binary_target = self.df[self.target_col].nunique() == 2
+            target_type = "binary" if is_binary_target else "continuous"
+
+            if is_binary_target:
+                # 二元目標變量的處理邏輯
+                if total_n < 30 or n_a < 30 or n_b < 30:
+                    # 使用 Fisher's exact test
+                    contingency = pd.crosstab(
+                        self.df[feature] > split_value,
+                        self.df[self.target_col],
+                    )
+                    oddsratio, p_value = stats.fisher_exact(contingency)
+                    test_method = "Fisher's exact test (small sample)"
+                else:
+                    # 使用 two-proportion z-test
+                    p_a = group_a[self.target_col].mean()
+                    p_b = group_b[self.target_col].mean()
+                    n_a = len(group_a)
+                    n_b = len(group_b)
+
+                    # 計算合併比例
+                    p_pooled = (p_a * n_a + p_b * n_b) / (n_a + n_b)
+
+                    # 計算 z 統計量
+                    z = (p_a - p_b) / np.sqrt(
+                        p_pooled * (1 - p_pooled) * (1 / n_a + 1 / n_b)
+                    )
+                    p_value = 2 * (1 - stats.norm.cdf(abs(z)))
+                    test_method = "Two-proportion z-test"
             else:
-                stat, p_value = stats.ttest_ind(
-                    group_a[self.target_col],
-                    group_b[self.target_col],
-                    equal_var=False,
-                )
-                test_method = "Welch's t-test"
+                # 連續目標變量的處理邏輯
+                if total_n < 30 or n_a < 30 or n_b < 30:
+                    # 使用 Mann-Whitney U test
+                    stat, p_value = stats.mannwhitneyu(
+                        group_a[self.target_col],
+                        group_b[self.target_col],
+                        alternative="two-sided",
+                    )
+                    test_method = "Mann-Whitney U test (small sample)"
+                else:
+                    # 檢查數據變異性
+                    def check_variability(data):
+                        if len(data) < 2:
+                            return False
+                        # 計算變異係數
+                        cv = np.std(data) / np.mean(data) if np.mean(data) != 0 else 0
+                        # 如果變異係數太小（小於0.01），認為數據變異性不足
+                        return cv >= 0.01
+
+                    # 檢查兩組數據的變異性
+                    a_variable = check_variability(group_a[self.target_col])
+                    b_variable = check_variability(group_b[self.target_col])
+
+                    if not (a_variable and b_variable):
+                        # 如果任一組數據變異性不足，使用 Mann-Whitney U test
+                        stat, p_value = stats.mannwhitneyu(
+                            group_a[self.target_col],
+                            group_b[self.target_col],
+                            alternative="two-sided",
+                        )
+                        test_method = "Mann-Whitney U test (low variability)"
+                    else:
+                        try:
+                            # 計算偏度
+                            skew_a = stats.skew(group_a[self.target_col])
+                            skew_b = stats.skew(group_b[self.target_col])
+
+                            if abs(skew_a) > 2 or abs(skew_b) > 2:
+                                # 使用 Mann-Whitney U test 處理偏斜數據
+                                stat, p_value = stats.mannwhitneyu(
+                                    group_a[self.target_col],
+                                    group_b[self.target_col],
+                                    alternative="two-sided",
+                                )
+                                test_method = "Mann-Whitney U test (skewed data)"
+                            else:
+                                # 使用 Welch's t-test
+                                stat, p_value = stats.ttest_ind(
+                                    group_a[self.target_col],
+                                    group_b[self.target_col],
+                                    equal_var=False,
+                                )
+                                test_method = "Welch's t-test"
+                        except RuntimeWarning:
+                            # 如果計算偏度時出現警告，使用 Mann-Whitney U test
+                            stat, p_value = stats.mannwhitneyu(
+                                group_a[self.target_col],
+                                group_b[self.target_col],
+                                alternative="two-sided",
+                            )
+                            test_method = (
+                                "Mann-Whitney U test (skew calculation failed)"
+                            )
         else:
             # 離散型特徵的分割（one-vs-rest）
             group_a = self.df[self.df[feature] == split_value]
@@ -122,41 +182,120 @@ class FeatureAnalyzer:
             group_b_rate = group_b[self.target_col].mean()
             effect_size = abs(group_a_rate - group_b_rate)
 
-            # 根據資料集大小動態決定檢定方法
             n_a = len(group_a)
             n_b = len(group_b)
             total_n = len(self.df)
 
-            # 如果任一組的期望頻數小於5，使用Fisher's exact test
-            contingency = pd.crosstab(
-                self.df[feature] == split_value,
-                self.df[self.target_col],
-            )
-            expected = stats.contingency.expected_freq(contingency)
-            if np.any(expected < 5):
-                oddsratio, p_value = stats.fisher_exact(contingency)
-                test_method = "Fisher's exact test (expected freq < 5)"
-            # 如果總樣本數小於30，使用Fisher's exact test
-            elif total_n < 30:
-                oddsratio, p_value = stats.fisher_exact(contingency)
-                test_method = "Fisher's exact test (n < 30)"
-            # 其他情況使用Chi-square test
+            # 檢查目標變量是否為二元變量
+            is_binary_target = self.df[self.target_col].nunique() == 2
+            target_type = "binary" if is_binary_target else "continuous"
+
+            if is_binary_target:
+                # 二元目標變量的處理邏輯
+                contingency = pd.crosstab(
+                    self.df[feature] == split_value,
+                    self.df[self.target_col],
+                )
+                expected = stats.contingency.expected_freq(contingency)
+
+                if np.any(expected < 5) or total_n < 30 or n_a < 30 or n_b < 30:
+                    # 使用 Fisher's exact test
+                    oddsratio, p_value = stats.fisher_exact(contingency)
+                    test_method = (
+                        "Fisher's exact test (small sample or expected freq < 5)"
+                    )
+                else:
+                    # 使用 two-proportion z-test
+                    p_a = group_a[self.target_col].mean()
+                    p_b = group_b[self.target_col].mean()
+                    p_pooled = (p_a * n_a + p_b * n_b) / (n_a + n_b)
+                    z = (p_a - p_b) / np.sqrt(
+                        p_pooled * (1 - p_pooled) * (1 / n_a + 1 / n_b)
+                    )
+                    p_value = 2 * (1 - stats.norm.cdf(abs(z)))
+                    test_method = "Two-proportion z-test"
             else:
-                chi2, p_value, _, _ = stats.chi2_contingency(contingency)
-                test_method = "Chi-square test"
+                # 連續目標變量的處理邏輯
+                if total_n < 30 or n_a < 30 or n_b < 30:
+                    # 使用 Mann-Whitney U test
+                    stat, p_value = stats.mannwhitneyu(
+                        group_a[self.target_col],
+                        group_b[self.target_col],
+                        alternative="two-sided",
+                    )
+                    test_method = "Mann-Whitney U test (small sample)"
+                else:
+                    # 檢查數據變異性
+                    def check_variability(data):
+                        if len(data) < 2:
+                            return False
+                        # 計算變異係數
+                        cv = np.std(data) / np.mean(data) if np.mean(data) != 0 else 0
+                        # 如果變異係數太小（小於0.01），認為數據變異性不足
+                        return cv >= 0.01
+
+                    # 檢查兩組數據的變異性
+                    a_variable = check_variability(group_a[self.target_col])
+                    b_variable = check_variability(group_b[self.target_col])
+
+                    if not (a_variable and b_variable):
+                        # 如果任一組數據變異性不足，使用 Mann-Whitney U test
+                        stat, p_value = stats.mannwhitneyu(
+                            group_a[self.target_col],
+                            group_b[self.target_col],
+                            alternative="two-sided",
+                        )
+                        test_method = "Mann-Whitney U test (low variability)"
+                    else:
+                        try:
+                            # 計算偏度
+                            skew_a = stats.skew(group_a[self.target_col])
+                            skew_b = stats.skew(group_b[self.target_col])
+
+                            if abs(skew_a) > 2 or abs(skew_b) > 2:
+                                # 使用 Mann-Whitney U test 處理偏斜數據
+                                stat, p_value = stats.mannwhitneyu(
+                                    group_a[self.target_col],
+                                    group_b[self.target_col],
+                                    alternative="two-sided",
+                                )
+                                test_method = "Mann-Whitney U test (skewed data)"
+                            else:
+                                # 使用 Welch's t-test
+                                stat, p_value = stats.ttest_ind(
+                                    group_a[self.target_col],
+                                    group_b[self.target_col],
+                                    equal_var=False,
+                                )
+                                test_method = "Welch's t-test"
+                        except RuntimeWarning:
+                            # 如果計算偏度時出現警告，使用 Mann-Whitney U test
+                            stat, p_value = stats.mannwhitneyu(
+                                group_a[self.target_col],
+                                group_b[self.target_col],
+                                alternative="two-sided",
+                            )
+                            test_method = (
+                                "Mann-Whitney U test (skew calculation failed)"
+                            )
 
         return SplitResult(
             feature=feature,
             feature_type=feature_type,
             rule=rule,
-            group_a_rate=group_a_rate * 100,
-            group_b_rate=group_b_rate * 100,
-            effect_size=effect_size * 100,
+            group_a_rate=(
+                group_a_rate * 100 if target_type == "binary" else group_a_rate
+            ),
+            group_b_rate=(
+                group_b_rate * 100 if target_type == "binary" else group_b_rate
+            ),
+            effect_size=effect_size * 100 if target_type == "binary" else effect_size,
             p_value=p_value,
             is_significant=p_value < self.significance_level,
             test_method=test_method,
             group_a_count=n_a,
             group_b_count=n_b,
+            target_type=target_type,
         )
 
     def _analyze_discrete_feature(self, feature: str) -> List[SplitResult]:

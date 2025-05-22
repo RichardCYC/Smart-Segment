@@ -1,31 +1,28 @@
 import InfoIcon from '@mui/icons-material/Info';
 import {
-  Box,
-  Chip,
-  Divider,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Tooltip,
-  Typography
+    Box,
+    Chip,
+    Divider,
+    Paper,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    Tooltip,
+    Typography
 } from '@mui/material';
 import React from 'react';
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 
 const FeatureResults = ({ results }) => {
-  // Group results by significance
-  const significantResults = results.filter(result => result.is_significant);
-  const nonSignificantResults = results.filter(result => !result.is_significant);
+  // 依 effect size 由大到小排序
+  const sortedResults = [...results].sort((a, b) => b.effect_size - a.effect_size);
+  const significantResults = sortedResults.filter(result => result.is_significant);
+  const nonSignificantResults = sortedResults.filter(result => !result.is_significant);
 
   // Sort chartData by significance priority, matching the table order above
-  const sortedResults = [
-    ...results.filter(r => r.is_significant),
-    ...results.filter(r => !r.is_significant)
-  ];
   const chartData = sortedResults.map(result => ({
     name: result.feature,
     rule: result.rule,
@@ -42,9 +39,13 @@ const FeatureResults = ({ results }) => {
     "Mann-Whitney U test (n < 30)": "Used for small samples (n<30) of two independent groups, does not assume normal distribution",
     "Mann-Whitney U test (group size < 30)": "Used when either group size is less than 30, does not assume normal distribution",
     "Mann-Whitney U test (skewed data)": "Used for severely skewed data distributions, does not assume normal distribution",
+    "Mann-Whitney U test (low variability)": "Used when one or both groups have very low variability (almost identical values)",
+    "Mann-Whitney U test (skew calculation failed)": "Used when skewness calculation fails, fallback to non-parametric test",
     "Chi-square test": "Used for testing independence of categorical variables, requires expected frequencies > 5",
     "Fisher's exact test (expected freq < 5)": "Used for testing independence when expected frequencies < 5",
-    "Fisher's exact test (n < 30)": "Used for small samples (n<30) of categorical variables"
+    "Fisher's exact test (n < 30)": "Used for small samples (n<30) of categorical variables",
+    "Fisher's exact test (small sample or expected freq < 5)": "Used for small samples or when expected frequencies < 5",
+    "Two-proportion z-test": "Used to compare proportions or means between two groups when sample size is sufficient. Assumes independent samples.",
   };
 
   return (
@@ -57,11 +58,16 @@ const FeatureResults = ({ results }) => {
           <TableHead>
             <TableRow>
               <TableCell>Feature Name</TableCell>
-              <TableCell>Feature Type</TableCell>
               <TableCell>Split Rule</TableCell>
-              <TableCell>Group A (Y=True%)</TableCell>
-              <TableCell>Group B (Y=True%)</TableCell>
-              <TableCell>Effect Size</TableCell>
+              <TableCell>
+                {results[0]?.target_type === 'binary' ? 'Group A (Y=True%)' : 'Group A (Y Mean)'}
+              </TableCell>
+              <TableCell>
+                {results[0]?.target_type === 'binary' ? 'Group B (Y=True%)' : 'Group B (Y Mean)'}
+              </TableCell>
+              <TableCell>
+                {results[0]?.target_type === 'binary' ? 'Effect Size (%)' : 'Effect Size'}
+              </TableCell>
               <TableCell>P-value</TableCell>
               <TableCell>Significance</TableCell>
               <TableCell>Statistical Test</TableCell>
@@ -75,11 +81,22 @@ const FeatureResults = ({ results }) => {
                 sx={{ backgroundColor: 'rgba(76, 175, 80, 0.1)' }}
               >
                 <TableCell>{result.feature}</TableCell>
-                <TableCell>{result.feature_type === 'continuous' ? 'Continuous' : 'Discrete'}</TableCell>
                 <TableCell>{result.rule}</TableCell>
-                <TableCell>{result.group_a_rate.toFixed(2)}%</TableCell>
-                <TableCell>{result.group_b_rate.toFixed(2)}%</TableCell>
-                <TableCell>{result.effect_size.toFixed(2)}%</TableCell>
+                <TableCell>
+                  {result.target_type === 'binary'
+                    ? `${result.group_a_rate.toFixed(2)}%`
+                    : result.group_a_rate.toFixed(2)}
+                </TableCell>
+                <TableCell>
+                  {result.target_type === 'binary'
+                    ? `${result.group_b_rate.toFixed(2)}%`
+                    : result.group_b_rate.toFixed(2)}
+                </TableCell>
+                <TableCell>
+                  {result.target_type === 'binary'
+                    ? `${result.effect_size.toFixed(2)}%`
+                    : result.effect_size.toFixed(2)}
+                </TableCell>
                 <TableCell>{result.p_value.toFixed(4)}</TableCell>
                 <TableCell>
                   <Chip
@@ -113,7 +130,7 @@ const FeatureResults = ({ results }) => {
             {/* Divider */}
             {significantResults.length > 0 && nonSignificantResults.length > 0 && (
               <TableRow>
-                <TableCell colSpan={9}>
+                <TableCell colSpan={8}>
                   <Divider />
                 </TableCell>
               </TableRow>
@@ -126,11 +143,22 @@ const FeatureResults = ({ results }) => {
                 sx={{ backgroundColor: 'rgba(255, 152, 0, 0.1)' }}
               >
                 <TableCell>{result.feature}</TableCell>
-                <TableCell>{result.feature_type === 'continuous' ? 'Continuous' : 'Discrete'}</TableCell>
                 <TableCell>{result.rule}</TableCell>
-                <TableCell>{result.group_a_rate.toFixed(2)}%</TableCell>
-                <TableCell>{result.group_b_rate.toFixed(2)}%</TableCell>
-                <TableCell>{result.effect_size.toFixed(2)}%</TableCell>
+                <TableCell>
+                  {result.target_type === 'binary'
+                    ? `${result.group_a_rate.toFixed(2)}%`
+                    : result.group_a_rate.toFixed(2)}
+                </TableCell>
+                <TableCell>
+                  {result.target_type === 'binary'
+                    ? `${result.group_b_rate.toFixed(2)}%`
+                    : result.group_b_rate.toFixed(2)}
+                </TableCell>
+                <TableCell>
+                  {result.target_type === 'binary'
+                    ? `${result.effect_size.toFixed(2)}%`
+                    : result.effect_size.toFixed(2)}
+                </TableCell>
                 <TableCell>{result.p_value.toFixed(4)}</TableCell>
                 <TableCell>
                   <Chip
@@ -201,7 +229,9 @@ const FeatureResults = ({ results }) => {
                       textAnchor="middle"
                       fontSize="12"
                     >
-                      {`${value.toFixed(2)}% (n=${count})`}
+                      {results[0]?.target_type === 'binary'
+                        ? `${value.toFixed(2)}% (n=${count})`
+                        : `${value.toFixed(2)} (n=${count})`}
                     </text>
                   );
                 }}
@@ -221,7 +251,9 @@ const FeatureResults = ({ results }) => {
                       textAnchor="middle"
                       fontSize="12"
                     >
-                      {`${value.toFixed(2)}% (n=${count})`}
+                      {results[0]?.target_type === 'binary'
+                        ? `${value.toFixed(2)}% (n=${count})`
+                        : `${value.toFixed(2)} (n=${count})`}
                     </text>
                   );
                 }}
