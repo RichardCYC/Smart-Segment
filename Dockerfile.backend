@@ -7,14 +7,11 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# 複製依賴文件
-COPY requirements.txt .
+# 複製所有後端文件（除了 .dockerignore 中排除的文件）
+COPY . .
 
 # 安裝 Python 依賴
 RUN pip install --no-cache-dir -r requirements.txt
-
-# 複製應用程序文件
-COPY . .
 
 # 創建上傳目錄
 RUN mkdir -p uploads

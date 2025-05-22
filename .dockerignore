@@ -1,0 +1,12 @@
+# 排除前端資料夾
+frontend/
+
+# 排除其他不需要的文件
+.git
+.gitignore
+README.md
+*.pyc
+__pycache__/
+.pytest_cache/
+.coverage
+htmlcov/
