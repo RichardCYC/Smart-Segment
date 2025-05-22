@@ -23,9 +23,6 @@ services:
     volumes:
       - ./frontend:/app
       - /app/node_modules
-    environment:
-      - REACT_APP_API_URL=http://localhost:5000
-      - REACT_APP_GA_ID=${REACT_APP_GA_ID:-}  # Read from .env in local development, empty if not set
     env_file:
       - ./frontend/.env  # Path to .env file
     depends_on:
