@@ -46,3 +46,8 @@ htmlcov/
 .cache
 coverage.xml
 *.cover
+
+# Docker
+.docker/
+docker-compose.override.yml
+*.env
