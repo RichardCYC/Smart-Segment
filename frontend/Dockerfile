@@ -2,20 +2,23 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-# 複製 package.json 和 package-lock.json
+# Copy package.json and package-lock.json
 COPY package*.json ./
 
-# 安裝依賴
+# Install dependencies
 RUN npm install
 
-# 複製源代碼
+# Copy .env file (if exists)
+COPY .env* ./
+
+# Copy source code
 COPY . .
 
-# 構建應用
+# Build the application
 RUN npm run build
 
-# 暴露端口
+# Expose port
 EXPOSE 3000
 
-# 啟動命令
+# Start command
 CMD ["npm", "start"]

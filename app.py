@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 from flask import Flask, jsonify, request
 from flask_cors import CORS
+from scipy import stats
 from werkzeug.utils import secure_filename
 
 from feature_analysis import FeatureAnalyzer, SortMode
@@ -46,6 +47,150 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+class FeatureAnalyzer:
+    def __init__(self, df, target_column, significance_level=0.05):
+        self.df = df
+        self.target_column = target_column
+        self.significance_level = significance_level
+        self.target_type = self._determine_target_type()
+        self.feature_types = self._determine_feature_types()
+
+    def _determine_target_type(self):
+        # Determine if target is binary or continuous
+        unique_values = self.df[self.target_column].nunique()
+        if unique_values == 2:
+            return "binary"
+        return "continuous"
+
+    def _determine_feature_types(self):
+        # Determine feature types (discrete or continuous)
+        feature_types = {}
+        for column in self.df.columns:
+            if column == self.target_column:
+                continue
+            unique_values = self.df[column].nunique()
+            if unique_values <= 10:  # Consider as discrete if unique values <= 10
+                feature_types[column] = "discrete"
+            else:
+                feature_types[column] = "continuous"
+        return feature_types
+
+    def _calculate_effect_size(self, group_a, group_b):
+        if self.target_type == "binary":
+            # For binary target, calculate percentage difference
+            return abs(group_a.mean() - group_b.mean()) * 100
+        else:
+            # For continuous target, calculate Cohen's d
+            n1, n2 = len(group_a), len(group_b)
+            var1, var2 = group_a.var(), group_b.var()
+            pooled_se = np.sqrt(((n1 - 1) * var1 + (n2 - 1) * var2) / (n1 + n2 - 2))
+            return abs(group_a.mean() - group_b.mean()) / pooled_se
+
+    def _perform_statistical_test(self, group_a, group_b):
+        if self.target_type == "binary":
+            # Chi-square test for binary target
+            contingency = pd.crosstab(
+                pd.concat(
+                    [pd.Series(["A"] * len(group_a)), pd.Series(["B"] * len(group_b))]
+                ),
+                pd.concat([group_a, group_b]),
+            )
+            chi2, p_value = stats.chi2_contingency(contingency)[:2]
+            return p_value, "chi-square"
+        else:
+            # T-test for continuous target
+            t_stat, p_value = stats.ttest_ind(group_a, group_b)
+            return p_value, "t-test"
+
+    def find_best_split(self, feature):
+        best_split = None
+        best_effect_size = -1
+        best_p_value = 1
+        best_rule = None
+
+        if self.feature_types[feature] == "discrete":
+            # For discrete features, try each unique value as a split point
+            unique_values = self.df[feature].unique()
+            for value in unique_values:
+                group_a = self.df[self.df[feature] == value][self.target_column]
+                group_b = self.df[self.df[feature] != value][self.target_column]
+
+                if len(group_a) == 0 or len(group_b) == 0:
+                    continue
+
+                effect_size = self._calculate_effect_size(group_a, group_b)
+                p_value, test_method = self._perform_statistical_test(group_a, group_b)
+
+                if effect_size > best_effect_size:
+                    best_effect_size = effect_size
+                    best_p_value = p_value
+                    best_split = (group_a, group_b)
+                    best_rule = f"{feature} = {value}"
+
+        else:
+            # For continuous features, try different percentiles as split points
+            percentiles = [25, 50, 75]
+            for p in percentiles:
+                split_value = self.df[feature].quantile(p / 100)
+                group_a = self.df[self.df[feature] >= split_value][self.target_column]
+                group_b = self.df[self.df[feature] < split_value][self.target_column]
+
+                if len(group_a) == 0 or len(group_b) == 0:
+                    continue
+
+                effect_size = self._calculate_effect_size(group_a, group_b)
+                p_value, test_method = self._perform_statistical_test(group_a, group_b)
+
+                if effect_size > best_effect_size:
+                    best_effect_size = effect_size
+                    best_p_value = p_value
+                    best_split = (group_a, group_b)
+                    best_rule = f"{feature} >= {split_value:.2f}"
+
+        if best_split is None:
+            return None
+
+        group_a, group_b = best_split
+        return {
+            "feature": feature,
+            "feature_type": self.feature_types[feature],
+            "rule": best_rule,
+            "group_a_rate": (
+                group_a.mean() * 100 if self.target_type == "binary" else group_a.mean()
+            ),
+            "group_b_rate": (
+                group_b.mean() * 100 if self.target_type == "binary" else group_b.mean()
+            ),
+            "effect_size": best_effect_size,
+            "p_value": best_p_value,
+            "is_significant": best_p_value < self.significance_level,
+            "test_method": test_method,
+            "group_a_count": len(group_a),
+            "group_b_count": len(group_b),
+        }
+
+    def get_top_splits_per_feature(self):
+        results = {}
+        for feature in self.df.columns:
+            if feature != self.target_column:
+                split_result = self.find_best_split(feature)
+                if split_result:
+                    results[feature] = split_result
+        return results
+
+    def find_best_splits(self, n_splits=5):
+        all_splits = []
+        for feature in self.df.columns:
+            if feature != self.target_column:
+                split_result = self.find_best_split(feature)
+                if split_result:
+                    all_splits.append(split_result)
+
+        # Sort by effect size
+        all_splits.sort(key=lambda x: x["effect_size"], reverse=True)
+        return all_splits[:n_splits]
 
 
 @app.route("/api/analyze", methods=["POST"])
@@ -134,13 +279,8 @@ def analyze_csv():
                     400,
                 )
 
-        # Create feature analyzer
-        analyzer = FeatureAnalyzer(
-            df,
-            target_column,
-            significance_level=significance_level,
-            sort_mode=SortMode.IMPACT if sort_mode == "impact" else SortMode.P_VALUE,
-        )
+        # Initialize analyzer
+        analyzer = FeatureAnalyzer(df, target_column, significance_level)
 
         if view_mode == "best_per_feature":
             # Get best split for each feature
