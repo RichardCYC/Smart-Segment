@@ -27,4 +27,4 @@ ENV FLASK_ENV=production
 EXPOSE 5000
 
 # 啟動命令
-CMD ["flask", "run", "--host=0.0.0.0"]
+CMD ["gunicorn", "--workers=4", "--bind=0.0.0.0:5000", "--timeout=120", "app:app"]

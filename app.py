@@ -1,9 +1,13 @@
 import json
 import logging
 import os
+import time
+import traceback
+from datetime import datetime
 
 import numpy as np
 import pandas as pd
+import psutil
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from scipy import stats
@@ -13,9 +17,31 @@ from feature_analysis import FeatureAnalyzer, SortMode
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - [%(name)s] - %(message)s",
+    handlers=[logging.StreamHandler()],
 )
 logger = logging.getLogger(__name__)
+
+
+def log_system_metrics():
+    process = psutil.Process()
+    memory_info = process.memory_info()
+    return {
+        "memory_usage_mb": memory_info.rss / 1024 / 1024,
+        "cpu_percent": process.cpu_percent(),
+        "thread_count": process.num_threads(),
+    }
+
+
+def log_request_info():
+    return {
+        "timestamp": datetime.now().isoformat(),
+        "endpoint": request.endpoint,
+        "method": request.method,
+        "ip": request.remote_addr,
+        "user_agent": request.user_agent.string,
+    }
 
 
 # Custom JSON encoder
@@ -191,6 +217,36 @@ class FeatureAnalyzer:
         # Sort by effect size
         all_splits.sort(key=lambda x: x["effect_size"], reverse=True)
         return all_splits[:n_splits]
+
+
+@app.before_request
+def before_request():
+    request.start_time = time.time()
+    metrics = log_system_metrics()
+    request_info = log_request_info()
+    logger.info(f"Request started - {request_info} - System metrics: {metrics}")
+
+
+@app.after_request
+def after_request(response):
+    if hasattr(request, "start_time"):
+        duration = time.time() - request.start_time
+        metrics = log_system_metrics()
+        logger.info(
+            f"Request completed - Duration: {duration:.2f}s - System metrics: {metrics}"
+        )
+    return response
+
+
+@app.errorhandler(Exception)
+def handle_error(error):
+    error_info = {
+        "error_type": type(error).__name__,
+        "error_message": str(error),
+        "traceback": traceback.format_exc(),
+    }
+    logger.error(f"Unhandled error: {error_info}")
+    return jsonify({"success": False, "error": str(error)}), 500
 
 
 @app.route("/api/analyze", methods=["POST"])
