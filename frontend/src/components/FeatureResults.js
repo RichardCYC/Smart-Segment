@@ -17,7 +17,7 @@ import React from 'react';
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 
 const FeatureResults = ({ results }) => {
-  // 依 effect size 由大到小排序
+  // Sort by effect size from largest to smallest
   const sortedResults = [...results].sort((a, b) => b.effect_size - a.effect_size);
   const significantResults = sortedResults.filter(result => result.is_significant);
   const nonSignificantResults = sortedResults.filter(result => !result.is_significant);

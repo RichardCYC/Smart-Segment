@@ -43,7 +43,7 @@ class FeatureAnalyzer:
         self._classify_features()
 
     def _classify_features(self):
-        """將特徵分類為離散型和連續型"""
+        """Classify features as discrete and continuous"""
         self.continuous_features = []
         self.discrete_features = []
 
@@ -52,7 +52,9 @@ class FeatureAnalyzer:
                 continue
 
             if self.df[col].dtype in ["int64", "float64"]:
-                if self.df[col].nunique() > 10:  # 如果唯一值超過10個，視為連續型
+                if (
+                    self.df[col].nunique() > 10
+                ):  # If unique values exceed 10, treat as continuous
                     self.continuous_features.append(col)
                 else:
                     self.discrete_features.append(col)
@@ -62,31 +64,31 @@ class FeatureAnalyzer:
     def _calculate_split_statistics(
         self, feature: str, split_value: float, feature_type: str = "continuous"
     ) -> SplitResult:
-        """計算給定分割點的統計指標"""
+        """Calculate statistical indicators for a given split point"""
         if feature_type == "continuous":
-            # 連續型特徵的分割
+            # Split for continuous features
             group_a = self.df[self.df[feature] > split_value]
             group_b = self.df[self.df[feature] <= split_value]
             rule = f"{feature} > {split_value:.2f}"
-            # 計算各組的目標變量比率
+            # Calculate target variable ratio for each group
             group_a_rate = group_a[self.target_col].mean()
             group_b_rate = group_b[self.target_col].mean()
-            # 計算效應大小（絕對差異）
+            # Calculate effect size (absolute difference)
             effect_size = abs(group_a_rate - group_b_rate)
 
-            # 根據資料集大小動態決定檢定方法
+            # Dynamically determine test method based on dataset size
             n_a = len(group_a)
             n_b = len(group_b)
             total_n = len(self.df)
 
-            # 檢查目標變量是否為二元變量
+            # Check if target variable is binary variable
             is_binary_target = self.df[self.target_col].nunique() == 2
             target_type = "binary" if is_binary_target else "continuous"
 
             if is_binary_target:
-                # 二元目標變量的處理邏輯
+                # Binary target variable processing logic
                 if total_n < 30 or n_a < 30 or n_b < 30:
-                    # 使用 Fisher's exact test
+                    # Use Fisher's exact test
                     contingency = pd.crosstab(
                         self.df[feature] > split_value,
                         self.df[self.target_col],
@@ -94,25 +96,25 @@ class FeatureAnalyzer:
                     oddsratio, p_value = stats.fisher_exact(contingency)
                     test_method = "Fisher's exact test (small sample)"
                 else:
-                    # 使用 two-proportion z-test
+                    # Use two-proportion z-test
                     p_a = group_a[self.target_col].mean()
                     p_b = group_b[self.target_col].mean()
                     n_a = len(group_a)
                     n_b = len(group_b)
 
-                    # 計算合併比例
+                    # Calculate merged proportion
                     p_pooled = (p_a * n_a + p_b * n_b) / (n_a + n_b)
 
-                    # 計算 z 統計量
+                    # Calculate z statistic
                     z = (p_a - p_b) / np.sqrt(
                         p_pooled * (1 - p_pooled) * (1 / n_a + 1 / n_b)
                     )
                     p_value = 2 * (1 - stats.norm.cdf(abs(z)))
                     test_method = "Two-proportion z-test"
             else:
-                # 連續目標變量的處理邏輯
+                # Continuous target variable processing logic
                 if total_n < 30 or n_a < 30 or n_b < 30:
-                    # 使用 Mann-Whitney U test
+                    # Use Mann-Whitney U test
                     stat, p_value = stats.mannwhitneyu(
                         group_a[self.target_col],
                         group_b[self.target_col],
@@ -120,21 +122,21 @@ class FeatureAnalyzer:
                     )
                     test_method = "Mann-Whitney U test (small sample)"
                 else:
-                    # 檢查數據變異性
+                    # Check data variability
                     def check_variability(data):
                         if len(data) < 2:
                             return False
-                        # 計算變異係數
+                        # Calculate coefficient of variation
                         cv = np.std(data) / np.mean(data) if np.mean(data) != 0 else 0
-                        # 如果變異係數太小（小於0.01），認為數據變異性不足
+                        # If coefficient of variation is too small (less than 0.01), consider data variability insufficient
                         return cv >= 0.01
 
-                    # 檢查兩組數據的變異性
+                    # Check data variability of two groups
                     a_variable = check_variability(group_a[self.target_col])
                     b_variable = check_variability(group_b[self.target_col])
 
                     if not (a_variable and b_variable):
-                        # 如果任一組數據變異性不足，使用 Mann-Whitney U test
+                        # If one group data variability is insufficient, use Mann-Whitney U test
                         stat, p_value = stats.mannwhitneyu(
                             group_a[self.target_col],
                             group_b[self.target_col],
@@ -143,12 +145,12 @@ class FeatureAnalyzer:
                         test_method = "Mann-Whitney U test (low variability)"
                     else:
                         try:
-                            # 計算偏度
+                            # Calculate skewness
                             skew_a = stats.skew(group_a[self.target_col])
                             skew_b = stats.skew(group_b[self.target_col])
 
                             if abs(skew_a) > 2 or abs(skew_b) > 2:
-                                # 使用 Mann-Whitney U test 處理偏斜數據
+                                # Use Mann-Whitney U test to process skewed data
                                 stat, p_value = stats.mannwhitneyu(
                                     group_a[self.target_col],
                                     group_b[self.target_col],
@@ -156,7 +158,7 @@ class FeatureAnalyzer:
                                 )
                                 test_method = "Mann-Whitney U test (skewed data)"
                             else:
-                                # 使用 Welch's t-test
+                                # Use Welch's t-test
                                 stat, p_value = stats.ttest_ind(
                                     group_a[self.target_col],
                                     group_b[self.target_col],
@@ -164,7 +166,7 @@ class FeatureAnalyzer:
                                 )
                                 test_method = "Welch's t-test"
                         except RuntimeWarning:
-                            # 如果計算偏度時出現警告，使用 Mann-Whitney U test
+                            # If skewness calculation warning occurs, use Mann-Whitney U test
                             stat, p_value = stats.mannwhitneyu(
                                 group_a[self.target_col],
                                 group_b[self.target_col],
@@ -174,7 +176,7 @@ class FeatureAnalyzer:
                                 "Mann-Whitney U test (skew calculation failed)"
                             )
         else:
-            # 離散型特徵的分割（one-vs-rest）
+            # Split for discrete features (one-vs-rest)
             group_a = self.df[self.df[feature] == split_value]
             group_b = self.df[self.df[feature] != split_value]
             rule = f"{feature} = {split_value}"
@@ -186,12 +188,12 @@ class FeatureAnalyzer:
             n_b = len(group_b)
             total_n = len(self.df)
 
-            # 檢查目標變量是否為二元變量
+            # Check if target variable is binary variable
             is_binary_target = self.df[self.target_col].nunique() == 2
             target_type = "binary" if is_binary_target else "continuous"
 
             if is_binary_target:
-                # 二元目標變量的處理邏輯
+                # Binary target variable processing logic
                 contingency = pd.crosstab(
                     self.df[feature] == split_value,
                     self.df[self.target_col],
@@ -199,13 +201,13 @@ class FeatureAnalyzer:
                 expected = stats.contingency.expected_freq(contingency)
 
                 if np.any(expected < 5) or total_n < 30 or n_a < 30 or n_b < 30:
-                    # 使用 Fisher's exact test
+                    # Use Fisher's exact test
                     oddsratio, p_value = stats.fisher_exact(contingency)
                     test_method = (
                         "Fisher's exact test (small sample or expected freq < 5)"
                     )
                 else:
-                    # 使用 two-proportion z-test
+                    # Use two-proportion z-test
                     p_a = group_a[self.target_col].mean()
                     p_b = group_b[self.target_col].mean()
                     p_pooled = (p_a * n_a + p_b * n_b) / (n_a + n_b)
@@ -215,9 +217,9 @@ class FeatureAnalyzer:
                     p_value = 2 * (1 - stats.norm.cdf(abs(z)))
                     test_method = "Two-proportion z-test"
             else:
-                # 連續目標變量的處理邏輯
+                # Continuous target variable processing logic
                 if total_n < 30 or n_a < 30 or n_b < 30:
-                    # 使用 Mann-Whitney U test
+                    # Use Mann-Whitney U test
                     stat, p_value = stats.mannwhitneyu(
                         group_a[self.target_col],
                         group_b[self.target_col],
@@ -225,21 +227,21 @@ class FeatureAnalyzer:
                     )
                     test_method = "Mann-Whitney U test (small sample)"
                 else:
-                    # 檢查數據變異性
+                    # Check data variability
                     def check_variability(data):
                         if len(data) < 2:
                             return False
-                        # 計算變異係數
+                        # Calculate coefficient of variation
                         cv = np.std(data) / np.mean(data) if np.mean(data) != 0 else 0
-                        # 如果變異係數太小（小於0.01），認為數據變異性不足
+                        # If coefficient of variation is too small (less than 0.01), consider data variability insufficient
                         return cv >= 0.01
 
-                    # 檢查兩組數據的變異性
+                    # Check data variability of two groups
                     a_variable = check_variability(group_a[self.target_col])
                     b_variable = check_variability(group_b[self.target_col])
 
                     if not (a_variable and b_variable):
-                        # 如果任一組數據變異性不足，使用 Mann-Whitney U test
+                        # If one group data variability is insufficient, use Mann-Whitney U test
                         stat, p_value = stats.mannwhitneyu(
                             group_a[self.target_col],
                             group_b[self.target_col],
@@ -248,12 +250,12 @@ class FeatureAnalyzer:
                         test_method = "Mann-Whitney U test (low variability)"
                     else:
                         try:
-                            # 計算偏度
+                            # Calculate skewness
                             skew_a = stats.skew(group_a[self.target_col])
                             skew_b = stats.skew(group_b[self.target_col])
 
                             if abs(skew_a) > 2 or abs(skew_b) > 2:
-                                # 使用 Mann-Whitney U test 處理偏斜數據
+                                # Use Mann-Whitney U test to process skewed data
                                 stat, p_value = stats.mannwhitneyu(
                                     group_a[self.target_col],
                                     group_b[self.target_col],
@@ -261,7 +263,7 @@ class FeatureAnalyzer:
                                 )
                                 test_method = "Mann-Whitney U test (skewed data)"
                             else:
-                                # 使用 Welch's t-test
+                                # Use Welch's t-test
                                 stat, p_value = stats.ttest_ind(
                                     group_a[self.target_col],
                                     group_b[self.target_col],
@@ -269,7 +271,7 @@ class FeatureAnalyzer:
                                 )
                                 test_method = "Welch's t-test"
                         except RuntimeWarning:
-                            # 如果計算偏度時出現警告，使用 Mann-Whitney U test
+                            # If skewness calculation warning occurs, use Mann-Whitney U test
                             stat, p_value = stats.mannwhitneyu(
                                 group_a[self.target_col],
                                 group_b[self.target_col],
@@ -299,7 +301,7 @@ class FeatureAnalyzer:
         )
 
     def _analyze_discrete_feature(self, feature: str) -> List[SplitResult]:
-        """分析離散型特徵"""
+        """Analyze discrete features"""
         splits = []
         for category in self.df[feature].unique():
             split_result = self._calculate_split_statistics(
@@ -309,10 +311,10 @@ class FeatureAnalyzer:
         return splits
 
     def find_best_splits(self, n_splits: int = 5) -> List[SplitResult]:
-        """為所有特徵找到最佳分割點"""
+        """Find the best split point for all features"""
         all_splits = []
 
-        # 分析連續型特徵
+        # Analyze continuous features
         for feature in self.continuous_features:
             percentiles = np.linspace(0.1, 0.9, 9)
             split_points = np.percentile(self.df[feature], percentiles * 100)
@@ -321,28 +323,28 @@ class FeatureAnalyzer:
                 split_result = self._calculate_split_statistics(feature, split_point)
                 all_splits.append(split_result)
 
-        # 分析離散型特徵
+        # Analyze discrete features
         for feature in self.discrete_features:
             splits = self._analyze_discrete_feature(feature)
             all_splits.extend(splits)
 
-        # 按顯著性分組
+        # Group by significance
         significant_splits = [s for s in all_splits if s.is_significant]
         non_significant_splits = [s for s in all_splits if not s.is_significant]
 
-        # 根據排序模式排序顯著性結果
+        # Sort significant results based on sorting mode
         if self.sort_mode == SortMode.IMPACT:
             significant_splits.sort(key=lambda x: x.effect_size, reverse=True)
         else:  # SortMode.P_VALUE
             significant_splits.sort(key=lambda x: x.p_value)
 
-        # 非顯著性結果始終按效應大小排序
+        # Non-significant results are always sorted by effect size
         non_significant_splits.sort(key=lambda x: x.effect_size, reverse=True)
 
         return significant_splits + non_significant_splits
 
     def get_top_splits_per_feature(self) -> Dict[str, SplitResult]:
-        """獲取每個特徵的最佳分割"""
+        """Get the best split for each feature"""
         all_splits = self.find_best_splits()
         best_splits = {}
 
@@ -355,13 +357,13 @@ class FeatureAnalyzer:
         return best_splits
 
     def get_all_category_splits(self, feature: str) -> List[SplitResult]:
-        """獲取指定類別型變數的所有可能分群方式"""
+        """Get all possible grouping methods for specified category variable"""
         if feature not in self.discrete_features:
-            raise ValueError(f"特徵 {feature} 不是類別型變數")
+            raise ValueError(f"Feature {feature} is not a category variable")
 
         splits = self._analyze_discrete_feature(feature)
 
-        # 根據效應大小排序
+        # Sort by effect size
         splits.sort(key=lambda x: x.effect_size, reverse=True)
 
         return splits

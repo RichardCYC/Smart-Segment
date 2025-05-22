@@ -129,7 +129,7 @@ function App() {
     if (newMode !== null) {
       setViewMode(newMode);
       if (results) {
-        handleAnalyze(); // 重新分析以更新視圖
+        handleAnalyze(); // Re-analyze to update view
       }
     }
   };
@@ -138,7 +138,7 @@ function App() {
     if (newMode !== null) {
       setSortMode(newMode);
       if (results) {
-        handleAnalyze(); // 重新分析以更新視圖
+        handleAnalyze(); // Re-analyze to update view
       }
     }
   };

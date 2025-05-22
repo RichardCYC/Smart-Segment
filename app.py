@@ -10,14 +10,14 @@ from werkzeug.utils import secure_filename
 
 from feature_analysis import FeatureAnalyzer, SortMode
 
-# 配置日誌
+# Configure logging
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
 
-# 自定義 JSON 編碼器
+# Custom JSON encoder
 class NumpyEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, np.bool_):
@@ -33,14 +33,14 @@ class NumpyEncoder(json.JSONEncoder):
 
 app = Flask(__name__)
 CORS(app)
-app.json_encoder = NumpyEncoder  # 使用自定義編碼器
+app.json_encoder = NumpyEncoder  # Use custom encoder
 
-# 配置
+# Configuration
 UPLOAD_FOLDER = "uploads"
 MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB
 ALLOWED_EXTENSIONS = {"csv"}
 
-# 確保上傳目錄存在
+# Ensure upload directory exists
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 
@@ -51,26 +51,32 @@ def allowed_file(filename):
 @app.route("/api/analyze", methods=["POST"])
 def analyze_csv():
     try:
-        # 檢查是否有文件
+        # Check if file exists
         if "file" not in request.files:
-            return jsonify({"success": False, "error": "沒有上傳文件"}), 400
+            return jsonify({"success": False, "error": "No file uploaded"}), 400
 
         file = request.files["file"]
 
-        # 檢查文件名
+        # Check filename
         if file.filename == "":
-            return jsonify({"success": False, "error": "沒有選擇文件"}), 400
+            return jsonify({"success": False, "error": "No file selected"}), 400
 
-        # 檢查文件類型
+        # Check file type
         if not allowed_file(file.filename):
-            return jsonify({"success": False, "error": "只允許上傳CSV文件"}), 400
+            return (
+                jsonify({"success": False, "error": "Only CSV files are allowed"}),
+                400,
+            )
 
-        # 檢查目標列
+        # Check target column
         target_column = request.form.get("targetColumn")
         if not target_column:
-            return jsonify({"success": False, "error": "未指定目標列"}), 400
+            return (
+                jsonify({"success": False, "error": "Target column not specified"}),
+                400,
+            )
 
-        # 獲取其他參數
+        # Get other parameters
         view_mode = request.form.get("viewMode", "best_per_feature")
         significance_level = float(request.form.get("significanceLevel", "0.05"))
         sort_mode = request.form.get("sortMode", "impact")
@@ -78,44 +84,57 @@ def analyze_csv():
             request.form.get("showNonSignificant", "true").lower() == "true"
         )
 
-        # 讀取CSV
+        # Read CSV
         try:
             df = pd.read_csv(file)
         except Exception as e:
             return (
-                jsonify({"success": False, "error": f"CSV文件讀取錯誤: {str(e)}"}),
-                400,
-            )
-
-        # 檢查目標列是否存在
-        if target_column not in df.columns:
-            return (
                 jsonify(
-                    {"success": False, "error": f"目標列 '{target_column}' 不存在"}
+                    {"success": False, "error": f"Error reading CSV file: {str(e)}"}
                 ),
                 400,
             )
 
-        # 檢查數據量
-        if len(df) > 100000:  # 限制最大行數
+        # Check if target column exists
+        if target_column not in df.columns:
             return (
-                jsonify({"success": False, "error": "數據量過大，請限制在10萬行以內"}),
+                jsonify(
+                    {
+                        "success": False,
+                        "error": f"Target column '{target_column}' does not exist",
+                    }
+                ),
                 400,
             )
 
-        # 僅當目標變量是二元型時才轉換為 bool
+        # Check data size
+        if len(df) > 100000:  # Limit maximum rows
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "error": "Data size too large, please limit to 100,000 rows",
+                    }
+                ),
+                400,
+            )
+
+        # Convert to bool only when target variable is binary
         if df[target_column].nunique() == 2:
             try:
                 df[target_column] = df[target_column].astype(bool)
             except Exception as e:
                 return (
                     jsonify(
-                        {"success": False, "error": f"目標列轉換為布爾值失敗: {str(e)}"}
+                        {
+                            "success": False,
+                            "error": f"Failed to convert target column to boolean: {str(e)}",
+                        }
                     ),
                     400,
                 )
 
-        # 創建特徵分析器
+        # Create feature analyzer
         analyzer = FeatureAnalyzer(
             df,
             target_column,
@@ -124,7 +143,7 @@ def analyze_csv():
         )
 
         if view_mode == "best_per_feature":
-            # 獲取每個特徵的最佳分割
+            # Get best split for each feature
             results = analyzer.get_top_splits_per_feature()
             formatted_results = [
                 {
@@ -139,16 +158,16 @@ def analyze_csv():
                     "test_method": split.test_method,
                     "group_a_count": split.group_a_count,
                     "group_b_count": split.group_b_count,
-                    "summary": f"特徵 {split.feature} ({split.feature_type}) 的最佳分割點為 {split.rule}，"
-                    f"效應大小為 {split.effect_size:.2f}%，"
-                    f"p值為 {split.p_value:.4f}，"
-                    f"使用 {split.test_method} 進行檢定",
+                    "summary": f"Best split for feature {split.feature} ({split.feature_type}) is at {split.rule},"
+                    f"effect size is {split.effect_size:.2f}%, "
+                    f"p-value is {split.p_value:.4f}, "
+                    f"using {split.test_method} for testing",
                 }
                 for split in results.values()
                 if show_non_significant or split.is_significant
             ]
         else:
-            # 獲取全局最佳分割
+            # Get global best split
             results = analyzer.find_best_splits(n_splits=5)
             formatted_results = [
                 {
@@ -163,10 +182,10 @@ def analyze_csv():
                     "test_method": split.test_method,
                     "group_a_count": split.group_a_count,
                     "group_b_count": split.group_b_count,
-                    "summary": f"特徵 {split.feature} ({split.feature_type}) 的分割點 {split.rule}，"
-                    f"效應大小為 {split.effect_size:.2f}%，"
-                    f"p值為 {split.p_value:.4f}，"
-                    f"使用 {split.test_method} 進行檢定",
+                    "summary": f"Best split for feature {split.feature} ({split.feature_type}) is at {split.rule},"
+                    f"effect size is {split.effect_size:.2f}%, "
+                    f"p-value is {split.p_value:.4f}, "
+                    f"using {split.test_method} for testing",
                 }
                 for split in results
                 if show_non_significant or split.is_significant
@@ -184,76 +203,98 @@ def analyze_csv():
         )
 
     except Exception as e:
-        logger.error(f"處理請求時發生錯誤: {str(e)}", exc_info=True)
+        logger.error(f"Error processing request: {str(e)}", exc_info=True)
         return jsonify({"success": False, "error": str(e)}), 400
 
 
 @app.route("/api/category-splits", methods=["POST"])
 def get_category_splits():
     try:
-        # 檢查是否有文件
+        # Check if file exists
         if "file" not in request.files:
-            return jsonify({"success": False, "error": "沒有上傳文件"}), 400
+            return jsonify({"success": False, "error": "No file uploaded"}), 400
 
         file = request.files["file"]
 
-        # 檢查文件名
+        # Check filename
         if file.filename == "":
-            return jsonify({"success": False, "error": "沒有選擇文件"}), 400
+            return jsonify({"success": False, "error": "No file selected"}), 400
 
-        # 檢查文件類型
+        # Check file type
         if not allowed_file(file.filename):
-            return jsonify({"success": False, "error": "只允許上傳CSV文件"}), 400
+            return (
+                jsonify({"success": False, "error": "Only CSV files are allowed"}),
+                400,
+            )
 
-        # 檢查目標列
+        # Check target column
         target_column = request.form.get("targetColumn")
         if not target_column:
-            return jsonify({"success": False, "error": "未指定目標列"}), 400
+            return (
+                jsonify({"success": False, "error": "Target column not specified"}),
+                400,
+            )
 
-        # 檢查特徵列
+        # Check feature column
         feature = request.form.get("feature")
         if not feature:
-            return jsonify({"success": False, "error": "未指定特徵列"}), 400
+            return (
+                jsonify({"success": False, "error": "Feature column not specified"}),
+                400,
+            )
 
-        # 獲取顯著性水平
+        # Get significance level
         significance_level = float(request.form.get("significanceLevel", "0.05"))
 
-        # 讀取CSV
+        # Read CSV
         try:
             df = pd.read_csv(file)
         except Exception as e:
             return (
-                jsonify({"success": False, "error": f"CSV文件讀取錯誤: {str(e)}"}),
+                jsonify(
+                    {"success": False, "error": f"Error reading CSV file: {str(e)}"}
+                ),
                 400,
             )
 
-        # 檢查目標列和特徵列是否存在
+        # Check if target column and feature column exist
         if target_column not in df.columns:
             return (
                 jsonify(
-                    {"success": False, "error": f"目標列 '{target_column}' 不存在"}
+                    {
+                        "success": False,
+                        "error": f"Target column '{target_column}' does not exist",
+                    }
                 ),
                 400,
             )
         if feature not in df.columns:
             return (
-                jsonify({"success": False, "error": f"特徵列 '{feature}' 不存在"}),
+                jsonify(
+                    {
+                        "success": False,
+                        "error": f"Feature column '{feature}' does not exist",
+                    }
+                ),
                 400,
             )
 
-        # 僅當目標變量是二元型時才轉換為 bool
+        # Convert to bool only when target variable is binary
         if df[target_column].nunique() == 2:
             try:
                 df[target_column] = df[target_column].astype(bool)
             except Exception as e:
                 return (
                     jsonify(
-                        {"success": False, "error": f"目標列轉換為布爾值失敗: {str(e)}"}
+                        {
+                            "success": False,
+                            "error": f"Failed to convert target column to boolean: {str(e)}",
+                        }
                     ),
                     400,
                 )
 
-        # 創建特徵分析器
+        # Create feature analyzer
         analyzer = FeatureAnalyzer(
             df,
             target_column,
@@ -261,7 +302,7 @@ def get_category_splits():
             sort_mode=SortMode.IMPACT,
         )
 
-        # 獲取所有分群方式
+        # Get all category splits
         try:
             splits = analyzer.get_all_category_splits(feature)
             formatted_results = [
@@ -277,10 +318,10 @@ def get_category_splits():
                     "test_method": split.test_method,
                     "group_a_count": split.group_a_count,
                     "group_b_count": split.group_b_count,
-                    "summary": f"特徵 {split.feature} ({split.feature_type}) 的分割點 {split.rule}，"
-                    f"效應大小為 {split.effect_size:.2f}%，"
-                    f"p值為 {split.p_value:.4f}，"
-                    f"使用 {split.test_method} 進行檢定",
+                    "summary": f"Best split for feature {split.feature} ({split.feature_type}) is at {split.rule},"
+                    f"effect size is {split.effect_size:.2f}%, "
+                    f"p-value is {split.p_value:.4f}, "
+                    f"using {split.test_method} for testing",
                 }
                 for split in splits
             ]
@@ -296,51 +337,62 @@ def get_category_splits():
             return jsonify({"success": False, "error": str(e)}), 400
 
     except Exception as e:
-        logger.error(f"處理請求時發生錯誤: {str(e)}", exc_info=True)
+        logger.error(f"Error processing request: {str(e)}", exc_info=True)
         return jsonify({"success": False, "error": str(e)}), 400
 
 
 @app.route("/api/discrete-features", methods=["POST"])
 def get_discrete_features():
     try:
-        # 檢查是否有文件
+        # Check if file exists
         if "file" not in request.files:
-            return jsonify({"success": False, "error": "沒有上傳文件"}), 400
+            return jsonify({"success": False, "error": "No file uploaded"}), 400
 
         file = request.files["file"]
 
-        # 檢查文件名
+        # Check filename
         if file.filename == "":
-            return jsonify({"success": False, "error": "沒有選擇文件"}), 400
+            return jsonify({"success": False, "error": "No file selected"}), 400
 
-        # 檢查文件類型
+        # Check file type
         if not allowed_file(file.filename):
-            return jsonify({"success": False, "error": "只允許上傳CSV文件"}), 400
+            return (
+                jsonify({"success": False, "error": "Only CSV files are allowed"}),
+                400,
+            )
 
-        # 檢查目標列
+        # Check target column
         target_column = request.form.get("targetColumn")
         if not target_column:
-            return jsonify({"success": False, "error": "未指定目標列"}), 400
+            return (
+                jsonify({"success": False, "error": "Target column not specified"}),
+                400,
+            )
 
-        # 讀取CSV
+        # Read CSV
         try:
             df = pd.read_csv(file)
         except Exception as e:
             return (
-                jsonify({"success": False, "error": f"CSV文件讀取錯誤: {str(e)}"}),
-                400,
-            )
-
-        # 檢查目標列是否存在
-        if target_column not in df.columns:
-            return (
                 jsonify(
-                    {"success": False, "error": f"目標列 '{target_column}' 不存在"}
+                    {"success": False, "error": f"Error reading CSV file: {str(e)}"}
                 ),
                 400,
             )
 
-        # 創建特徵分析器
+        # Check if target column exists
+        if target_column not in df.columns:
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "error": f"Target column '{target_column}' does not exist",
+                    }
+                ),
+                400,
+            )
+
+        # Create feature analyzer
         analyzer = FeatureAnalyzer(
             df,
             target_column,
@@ -356,10 +408,12 @@ def get_discrete_features():
         )
 
     except Exception as e:
-        logger.error(f"處理請求時發生錯誤: {str(e)}", exc_info=True)
+        logger.error(f"Error processing request: {str(e)}", exc_info=True)
         return jsonify({"success": False, "error": str(e)}), 400
 
 
 if __name__ == "__main__":
-    logger.info("啟動 Flask 應用程序...")
-    app.run(host="127.0.0.1", port=5000, debug=True, use_reloader=True)  # 啟用自動重載
+    logger.info("Starting Flask application...")
+    app.run(
+        host="127.0.0.1", port=5000, debug=True, use_reloader=True
+    )  # Use auto reload
