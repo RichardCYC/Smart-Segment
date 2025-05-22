@@ -219,6 +219,7 @@ def analyze_csv():
                     f"effect size is {split.effect_size:.2f}%, "
                     f"p-value is {split.p_value:.4f}, "
                     f"using {split.test_method} for testing",
+                    "target_type": split.target_type,
                 }
                 for split in results.values()
                 if show_non_significant or split.is_significant
@@ -243,6 +244,7 @@ def analyze_csv():
                     f"effect size is {split.effect_size:.2f}%, "
                     f"p-value is {split.p_value:.4f}, "
                     f"using {split.test_method} for testing",
+                    "target_type": split.target_type,
                 }
                 for split in results
                 if show_non_significant or split.is_significant
@@ -379,6 +381,7 @@ def get_category_splits():
                     f"effect size is {split.effect_size:.2f}%, "
                     f"p-value is {split.p_value:.4f}, "
                     f"using {split.test_method} for testing",
+                    "target_type": split.target_type,
                 }
                 for split in splits
             ]
@@ -471,6 +474,4 @@ def get_discrete_features():
 
 if __name__ == "__main__":
     logger.info("Starting Flask application...")
-    app.run(
-        host="127.0.0.1", port=5000
-    )  # Use auto reload
+    app.run(host="127.0.0.1", port=5000)  # Use auto reload
