@@ -39,6 +39,7 @@ const theme = createTheme({
 
 function App() {
   const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+  const SHOW_CATEGORY_ANALYSIS = process.env.REACT_APP_SHOW_CATEGORY_ANALYSIS === 'true';
   const [file, setFile] = useState(null);
   const [targetColumn, setTargetColumn] = useState('');
   const [columns, setColumns] = useState([]);
@@ -296,7 +297,7 @@ function App() {
               <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
                 <Tabs value={activeTab} onChange={handleTabChange}>
                   <Tab label="General Analysis" />
-                  <Tab label="Category Variable Analysis" />
+                  {SHOW_CATEGORY_ANALYSIS && <Tab label="Category Variable Analysis" />}
                 </Tabs>
               </Box>
 
