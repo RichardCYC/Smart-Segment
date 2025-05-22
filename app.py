@@ -472,5 +472,5 @@ def get_discrete_features():
 if __name__ == "__main__":
     logger.info("Starting Flask application...")
     app.run(
-        host="127.0.0.1", port=5000, debug=True, use_reloader=True
+        host="127.0.0.1", port=5000
     )  # Use auto reload
