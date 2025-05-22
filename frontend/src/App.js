@@ -38,6 +38,7 @@ const theme = createTheme({
 });
 
 function App() {
+  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
   const [file, setFile] = useState(null);
   const [targetColumn, setTargetColumn] = useState('');
   const [columns, setColumns] = useState([]);
@@ -107,7 +108,7 @@ function App() {
       formData.append('targetColumn', newTargetColumn);
 
       try {
-        const response = await fetch('http://localhost:5000/api/discrete-features', {
+        const response = await fetch(`${API_URL}/api/discrete-features`, {
           method: 'POST',
           body: formData,
         });
@@ -170,7 +171,7 @@ function App() {
     formData.append('showNonSignificant', showNonSignificant.toString());
 
     try {
-      const response = await fetch('http://localhost:5000/api/analyze', {
+      const response = await fetch(`${API_URL}/api/analyze`, {
         method: 'POST',
         body: formData,
       });
@@ -212,7 +213,7 @@ function App() {
     formData.append('significanceLevel', significanceLevel);
 
     try {
-      const response = await fetch('http://localhost:5000/api/category-splits', {
+      const response = await fetch(`${API_URL}/api/category-splits`, {
         method: 'POST',
         body: formData,
       });
