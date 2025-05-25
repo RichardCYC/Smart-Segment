@@ -164,18 +164,6 @@ def analyze_csv():
                 400,
             )
 
-        # Check data size
-        if len(df) > 100000:  # Limit maximum rows
-            return (
-                jsonify(
-                    {
-                        "success": False,
-                        "error": "Data size too large, please limit to 100,000 rows",
-                    }
-                ),
-                400,
-            )
-
         # Convert to bool only when target variable is binary
         if df[target_column].nunique() == 2:
             try:
