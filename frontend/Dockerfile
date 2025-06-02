@@ -17,6 +17,9 @@ COPY . .
 # Build the application
 RUN npm run build
 
+# Install serve for running static files
+RUN npm install -g serve
+
 # Expose port
 EXPOSE 3000
 

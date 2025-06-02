@@ -13,6 +13,8 @@ services:
       - FLASK_APP=app.py
       - FLASK_ENV=production
     restart: unless-stopped
+    networks:
+      - app-network
 
   frontend:
     build:
@@ -23,11 +25,18 @@ services:
     volumes:
       - ./frontend:/app
       - /app/node_modules
+      - /app/.next
     environment:
-      - REACT_APP_API_URL=${REACT_APP_API_URL:-http://localhost:5000}
-      - REACT_APP_GA_ID=${REACT_APP_GA_ID:-}
+      - NEXT_PUBLIC_API_URL=http://backend:5000
+      - NEXT_PUBLIC_SHOW_CATEGORY_ANALYSIS=false
     env_file:
-      - ./frontend/.env  # Path to .env file
+      - ./frontend/.env.local
     depends_on:
       - backend
     restart: unless-stopped
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
