@@ -10,6 +10,7 @@ import FileUpload from '../components/FileUpload';
 export default function Home() {
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
   const SHOW_CATEGORY_ANALYSIS = process.env.NEXT_PUBLIC_SHOW_CATEGORY_ANALYSIS === 'true';
+  const GA_ID = process.env.NEXT_PUBLIC_GA_ID;
 
   const [file, setFile] = useState(null);
   const [targetColumn, setTargetColumn] = useState('');
@@ -139,6 +140,23 @@ export default function Home() {
           })
         }}
       />
+
+      {GA_ID && (
+        <>
+          <Script
+            src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
+            strategy="afterInteractive"
+          />
+          <Script id="ga-init" strategy="afterInteractive">
+            {`
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', '${GA_ID}');
+            `}
+          </Script>
+        </>
+      )}
 
       <Container maxWidth="lg">
         <Box sx={{ my: 4 }}>
