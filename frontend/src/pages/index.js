@@ -104,20 +104,20 @@ export default function Home() {
 
         {/* Open Graph / Facebook */}
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://your-domain.com/" />
+        <meta property="og:url" content="https://smart-segment.zeabur.app//" />
         <meta property="og:title" content="Smart Segment - AI-Powered Customer Segmentation" />
         <meta property="og:description" content="Transform your customer data into actionable insights with Smart Segment's AI-powered segmentation tool." />
-        <meta property="og:image" content="https://your-domain.com/og-image.jpg" />
+        <meta property="og:image" content="https://smart-segment.zeabur.app//og-image.jpg" />
 
         {/* Twitter */}
         <meta property="twitter:card" content="summary_large_image" />
-        <meta property="twitter:url" content="https://your-domain.com/" />
+        <meta property="twitter:url" content="https://smart-segment.zeabur.app//" />
         <meta property="twitter:title" content="Smart Segment - AI-Powered Customer Segmentation" />
         <meta property="twitter:description" content="Transform your customer data into actionable insights with Smart Segment's AI-powered segmentation tool." />
-        <meta property="twitter:image" content="https://your-domain.com/og-image.jpg" />
+        <meta property="twitter:image" content="https://smart-segment.zeabur.app//og-image.jpg" />
 
         {/* Canonical URL */}
-        <link rel="canonical" href="https://your-domain.com/" />
+        <link rel="canonical" href="https://smart-segment.zeabur.app//" />
       </Head>
 
       {/* Schema.org JSON-LD */}
