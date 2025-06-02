@@ -145,13 +145,22 @@ export default function Home() {
           <Typography variant="h4" component="h1" gutterBottom align="center">
             Smart Segment
           </Typography>
+          <Typography variant="body1" align="center" color="text.secondary" sx={{ mb: 3 }}>
+            Smart Segment helps you analyze your CSV data and generate actionable insights and feature importance rankings.<br /><br />
+            <b>Step 1:</b> Please upload your CSV file to get started.
+          </Typography>
 
-          <Paper sx={{ p: 3, mb: 3 }}>
+          <Paper sx={{ p: 3, mb: 3, boxShadow: 6, border: '1.5px solid #e0e0e0' }}>
             <FileUpload onFileSelect={handleFileSelect} error={error} />
+            {file && (
+              <Typography align="center" color="primary" sx={{ mt: 2 }}>
+                Uploaded file: {file.name}
+              </Typography>
+            )}
           </Paper>
 
           {columns.length > 0 && (
-            <Paper sx={{ p: 3, mb: 3 }}>
+            <Paper sx={{ p: 3, mb: 3, boxShadow: 6, border: '1.5px solid #e0e0e0' }}>
               <AnalysisControls
                 columns={columns}
                 targetColumn={targetColumn}
@@ -189,9 +198,11 @@ export default function Home() {
             </Paper>
           )}
 
-          <Paper sx={{ p: 3 }}>
-            <FeedbackForm />
-          </Paper>
+          {results && (
+            <Paper sx={{ p: 3 }}>
+              <FeedbackForm />
+            </Paper>
+          )}
         </Box>
       </Container>
     </>

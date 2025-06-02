@@ -39,6 +39,9 @@ export default function FileUpload({ onFileSelect, error }) {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <Typography align="center" color="text.secondary">
+        Please upload a CSV file (max 16MB) with column headers.
+      </Typography>
       <Button
         variant="contained"
         component="label"
