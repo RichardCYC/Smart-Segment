@@ -4,7 +4,6 @@ const nextConfig = {
   images: {
     domains: ['localhost', 'zeabur.app', '*.zeabur.app'],
   },
-  output: 'standalone',
   poweredByHeader: false,
   compress: true,
   experimental: {

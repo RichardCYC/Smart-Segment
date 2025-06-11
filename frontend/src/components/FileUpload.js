@@ -4,10 +4,22 @@ import React, { useEffect, useRef } from 'react';
 
 export default function FileUpload({ onFileSelect, error }) {
   const fileInputRef = useRef(null);
+  const buttonRef = useRef(null);
 
   useEffect(() => {
-    console.log('FileUpload component mounted - VERSION 4');
+    console.log('FileUpload component mounted - VERSION 5');
     console.log('File input ref:', fileInputRef.current);
+    console.log('Button ref:', buttonRef.current);
+
+    // 添加全局點擊事件監聽器
+    const handleGlobalClick = (e) => {
+      console.log('Global click detected:', e.target);
+    };
+    document.addEventListener('click', handleGlobalClick);
+
+    return () => {
+      document.removeEventListener('click', handleGlobalClick);
+    };
   }, []);
 
   const handleFileUpload = (event) => {
@@ -58,7 +70,7 @@ export default function FileUpload({ onFileSelect, error }) {
   };
 
   const handleButtonClick = (e) => {
-    console.log('Button clicked');
+    console.log('Button clicked - VERSION 5');
     e.preventDefault();
     e.stopPropagation();
 
@@ -74,19 +86,33 @@ export default function FileUpload({ onFileSelect, error }) {
     }
   };
 
+  const handleBoxClick = (e) => {
+    console.log('Box clicked:', e.target);
+  };
+
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+    <Box
+      sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
+      onClick={handleBoxClick}
+    >
       <Typography align="center" color="text.secondary">
         Please upload a CSV file with column headers.
       </Typography>
       <Typography align="center" color="primary" sx={{ fontWeight: 'bold' }}>
-        VERSION 4 - TEST UPDATE
+        VERSION 5 - TEST UPDATE
       </Typography>
       <Box sx={{ display: 'flex', justifyContent: 'center' }}>
         <Button
+          ref={buttonRef}
           variant="contained"
           startIcon={<CloudUploadIcon />}
           onClick={handleButtonClick}
+          sx={{
+            cursor: 'pointer',
+            '&:hover': {
+              backgroundColor: 'primary.dark'
+            }
+          }}
         >
           Upload CSV File
         </Button>
