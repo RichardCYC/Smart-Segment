@@ -6,19 +6,12 @@ export default function FileUpload({ onFileSelect, error }) {
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
     if (file) {
-      // Check file size (16MB limit)
-      if (file.size > 16 * 1024 * 1024) {
-        onFileSelect(null, 'File size cannot exceed 16MB');
-        return;
-      }
-
       // Check file type
       if (!file.name.toLowerCase().endsWith('.csv')) {
         onFileSelect(null, 'Only CSV files are allowed');
         return;
       }
 
-      onFileSelect(file, '');
       // Read CSV file header to get column names
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -40,7 +33,7 @@ export default function FileUpload({ onFileSelect, error }) {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       <Typography align="center" color="text.secondary">
-        Please upload a CSV file (max 16MB) with column headers.
+        Please upload a CSV file with column headers.
       </Typography>
       <Button
         variant="contained"

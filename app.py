@@ -64,7 +64,6 @@ app.json_encoder = NumpyEncoder  # Use custom encoder
 
 # Configuration
 UPLOAD_FOLDER = "uploads"
-MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB
 ALLOWED_EXTENSIONS = {"csv"}
 
 # Ensure upload directory exists
