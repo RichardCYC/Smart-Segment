@@ -1,9 +1,10 @@
 import { AppBar, Box, Button, Container, Toolbar, Typography } from '@mui/material';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import type { ReactNode } from 'react';
 
 interface LayoutProps {
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 export default function Layout({ children }: LayoutProps) {
