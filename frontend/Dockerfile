@@ -17,6 +17,10 @@ COPY . .
 # Build the application
 RUN npm run build
 
+# Copy public and .next/static to the standalone directory to ensure static assets are available
+RUN cp -r public .next/standalone/
+RUN cp -r .next/static .next/standalone/
+
 # Install serve for running static files
 RUN npm install -g serve
 
