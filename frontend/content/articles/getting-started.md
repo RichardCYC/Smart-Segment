@@ -1,7 +1,7 @@
 ---
 title: Getting Started with Smart Segments
 description: Learn how to use Smart Segments to analyze and segment your data effectively.
-publishedAt: '2024-03-20'
+publishedAt: '2025-06-11'
 author: Smart Segments Team
 tags: ['guide', 'tutorial', 'data-analysis']
 ---
