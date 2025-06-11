@@ -102,6 +102,8 @@ export default function Home() {
         title="Smart Segments - AI-Powered Customer Segmentation Tool"
         description="Transform your customer data into actionable insights with Smart Segments's AI-powered segmentation tool. Get started for free today."
         canonical="/"
+        ogType="website"
+        ogImage="/og-image.jpg"
       />
       <Container maxWidth="lg">
         <Box sx={{ my: 4 }}>
