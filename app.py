@@ -4,6 +4,7 @@ import os
 import time
 import traceback
 from datetime import datetime
+from io import StringIO
 
 import numpy as np
 import pandas as pd
@@ -63,11 +64,7 @@ CORS(app)
 app.json_encoder = NumpyEncoder  # Use custom encoder
 
 # Configuration
-UPLOAD_FOLDER = "uploads"
 ALLOWED_EXTENSIONS = {"csv"}
-
-# Ensure upload directory exists
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 
 def allowed_file(filename):
@@ -140,9 +137,10 @@ def analyze_csv():
             request.form.get("showNonSignificant", "true").lower() == "true"
         )
 
-        # Read CSV
+        # Read CSV directly from memory
         try:
-            df = pd.read_csv(file)
+            content = file.read().decode("utf-8")
+            df = pd.read_csv(StringIO(content))
         except Exception as e:
             return (
                 jsonify(
@@ -292,9 +290,10 @@ def get_category_splits():
         # Get significance level
         significance_level = float(request.form.get("significanceLevel", "0.05"))
 
-        # Read CSV
+        # Read CSV directly from memory
         try:
-            df = pd.read_csv(file)
+            content = file.read().decode("utf-8")
+            df = pd.read_csv(StringIO(content))
         except Exception as e:
             return (
                 jsonify(
@@ -416,9 +415,10 @@ def get_discrete_features():
                 400,
             )
 
-        # Read CSV
+        # Read CSV directly from memory
         try:
-            df = pd.read_csv(file)
+            content = file.read().decode("utf-8")
+            df = pd.read_csv(StringIO(content))
         except Exception as e:
             return (
                 jsonify(
