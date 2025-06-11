@@ -57,6 +57,9 @@ export default function Layout({ children }: LayoutProps) {
           <Typography variant="body2" color="text.secondary" align="center">
             © {new Date().getFullYear()} Smart Segments. All rights reserved.
           </Typography>
+          <Typography variant="body2" color="text.secondary" align="center">
+            <a href="https://www.flaticon.com/free-icons/wrench" title="wrench icons" target="_blank" rel="noopener noreferrer">Wrench icons created by Freepik - Flaticon</a>
+          </Typography>
         </Container>
       </Box>
     </Box>
