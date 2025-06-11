@@ -1,13 +1,13 @@
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import { Box, Button, Typography } from '@mui/material';
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 
 export default function FileUpload({ onFileSelect, error }) {
+  const fileInputRef = useRef(null);
+
   useEffect(() => {
-    console.log('FileUpload component mounted - VERSION 3');
-    // 檢查 DOM 元素是否存在
-    const fileInput = document.getElementById('file-upload');
-    console.log('File input element:', fileInput);
+    console.log('FileUpload component mounted - VERSION 4');
+    console.log('File input ref:', fileInputRef.current);
   }, []);
 
   const handleFileUpload = (event) => {
@@ -61,12 +61,16 @@ export default function FileUpload({ onFileSelect, error }) {
     console.log('Button clicked');
     e.preventDefault();
     e.stopPropagation();
-    const fileInput = document.getElementById('file-upload');
-    if (fileInput) {
-      console.log('Found file input, triggering click');
-      fileInput.click();
+
+    if (fileInputRef.current) {
+      console.log('Found file input ref, triggering click');
+      try {
+        fileInputRef.current.click();
+      } catch (err) {
+        console.error('Error triggering file input click:', err);
+      }
     } else {
-      console.log('File input not found');
+      console.error('File input ref not found');
     }
   };
 
@@ -76,7 +80,7 @@ export default function FileUpload({ onFileSelect, error }) {
         Please upload a CSV file with column headers.
       </Typography>
       <Typography align="center" color="primary" sx={{ fontWeight: 'bold' }}>
-        VERSION 3 - TEST UPDATE
+        VERSION 4 - TEST UPDATE
       </Typography>
       <Box sx={{ display: 'flex', justifyContent: 'center' }}>
         <Button
@@ -87,7 +91,7 @@ export default function FileUpload({ onFileSelect, error }) {
           Upload CSV File
         </Button>
         <input
-          id="file-upload"
+          ref={fileInputRef}
           type="file"
           style={{ display: 'none' }}
           accept=".csv"
