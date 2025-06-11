@@ -2,11 +2,23 @@
 const nextConfig = {
   reactStrictMode: true,
   images: {
-    domains: ['localhost'],
+    domains: ['localhost', 'zeabur.app', '*.zeabur.app'],
   },
   output: 'standalone',
   poweredByHeader: false,
-  compress: true
+  compress: true,
+  experimental: {
+    outputFileTracingRoot: undefined,
+  },
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+      };
+    }
+    return config;
+  },
 }
 
 module.exports = nextConfig
