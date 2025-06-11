@@ -35,20 +35,24 @@ export default function FileUpload({ onFileSelect, error }) {
       <Typography align="center" color="text.secondary">
         Please upload a CSV file with column headers.
       </Typography>
-      <Button
-        variant="contained"
-        component="label"
-        startIcon={<CloudUploadIcon />}
-        sx={{ alignSelf: 'center' }}
-      >
-        Upload CSV File
+      <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+        <label htmlFor="file-upload">
+          <Button
+            variant="contained"
+            component="span"
+            startIcon={<CloudUploadIcon />}
+          >
+            Upload CSV File
+          </Button>
+        </label>
         <input
+          id="file-upload"
           type="file"
           hidden
           accept=".csv"
           onChange={handleFileUpload}
         />
-      </Button>
+      </Box>
       {error && (
         <Typography color="error" align="center">
           {error}
