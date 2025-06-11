@@ -8,17 +8,23 @@
     "@mui/icons-material": "^5.15.3",
     "@mui/material": "^5.15.3",
     "axios": "^1.6.5",
+    "date-fns": "^3.3.1",
+    "gray-matter": "^4.0.3",
     "next": "^14.1.0",
+    "next-sitemap": "^4.2.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-ga4": "^2.1.0",
-    "recharts": "^2.10.3"
+    "recharts": "^2.10.3",
+    "remark": "^15.0.1",
+    "remark-html": "^16.0.1"
   },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "postbuild": "next-sitemap"
   },
   "eslintConfig": {
     "extends": [
@@ -36,5 +42,9 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "@types/node": "24.0.0",
+    "typescript": "5.8.3"
   }
 }

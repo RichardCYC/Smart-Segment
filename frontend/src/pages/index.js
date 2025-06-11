@@ -1,6 +1,6 @@
+import Layout from '@/components/Layout';
+import SEO from '@/components/SEO';
 import { Alert, Box, Button, CircularProgress, Container, Paper, Typography } from '@mui/material';
-import Head from 'next/head';
-import Script from 'next/script';
 import { useState } from 'react';
 import AnalysisControls from '../components/AnalysisControls';
 import FeatureResults from '../components/FeatureResults';
@@ -97,67 +97,12 @@ export default function Home() {
   };
 
   return (
-    <>
-      <Head>
-        <title>Smart Segment - AI-Powered Customer Segmentation Tool</title>
-        <meta name="description" content="Transform your customer data into actionable insights with Smart Segment's AI-powered segmentation tool. Get started for free today." />
-
-        {/* Open Graph / Facebook */}
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://smart-segment.zeabur.app//" />
-        <meta property="og:title" content="Smart Segment - AI-Powered Customer Segmentation" />
-        <meta property="og:description" content="Transform your customer data into actionable insights with Smart Segment's AI-powered segmentation tool." />
-        <meta property="og:image" content="https://smart-segment.zeabur.app//og-image.jpg" />
-
-        {/* Twitter */}
-        <meta property="twitter:card" content="summary_large_image" />
-        <meta property="twitter:url" content="https://smart-segment.zeabur.app//" />
-        <meta property="twitter:title" content="Smart Segment - AI-Powered Customer Segmentation" />
-        <meta property="twitter:description" content="Transform your customer data into actionable insights with Smart Segment's AI-powered segmentation tool." />
-        <meta property="twitter:image" content="https://smart-segment.zeabur.app//og-image.jpg" />
-
-        {/* Canonical URL */}
-        <link rel="canonical" href="https://smart-segment.zeabur.app//" />
-      </Head>
-
-      {/* Schema.org JSON-LD */}
-      <Script
-        id="schema-org"
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "SoftwareApplication",
-            "name": "Smart Segment",
-            "applicationCategory": "BusinessApplication",
-            "operatingSystem": "Web",
-            "offers": {
-              "@type": "Offer",
-              "price": "0",
-              "priceCurrency": "USD"
-            },
-            "description": "AI-powered customer segmentation tool that transforms your customer data into actionable insights."
-          })
-        }}
+    <Layout>
+      <SEO
+        title="Smart Segment - AI-Powered Customer Segmentation Tool"
+        description="Transform your customer data into actionable insights with Smart Segment's AI-powered segmentation tool. Get started for free today."
+        canonical="/"
       />
-
-      {GA_ID && (
-        <>
-          <Script
-            src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
-            strategy="afterInteractive"
-          />
-          <Script id="ga-init" strategy="afterInteractive">
-            {`
-              window.dataLayer = window.dataLayer || [];
-              function gtag(){dataLayer.push(arguments);}
-              gtag('js', new Date());
-              gtag('config', '${GA_ID}');
-            `}
-          </Script>
-        </>
-      )}
-
       <Container maxWidth="lg">
         <Box sx={{ my: 4 }}>
           <Typography variant="h4" component="h1" gutterBottom align="center">
@@ -198,10 +143,16 @@ export default function Home() {
                   onClick={handleAnalyze}
                   disabled={loading || !file || !targetColumn}
                 >
-                  {loading ? <CircularProgress size={24} /> : 'Analyze'}
+                  Analyze
                 </Button>
               </Box>
             </Paper>
+          )}
+
+          {loading && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
+              <CircularProgress />
+            </Box>
           )}
 
           {error && (
@@ -211,18 +162,17 @@ export default function Home() {
           )}
 
           {results && (
-            <Paper sx={{ p: 3, mb: 3 }}>
-              <FeatureResults results={results} />
-            </Paper>
+            <FeatureResults
+              results={results}
+              viewMode={viewMode}
+              sortMode={sortMode}
+              showNonSignificant={showNonSignificant}
+            />
           )}
 
-          {results && (
-            <Paper sx={{ p: 3 }}>
-              <FeedbackForm />
-            </Paper>
-          )}
+          <FeedbackForm />
         </Box>
       </Container>
-    </>
+    </Layout>
   );
 }
