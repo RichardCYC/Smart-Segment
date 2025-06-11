@@ -19,7 +19,7 @@ export default function Layout({ children }: LayoutProps) {
         <Toolbar>
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
             <Link href="/" style={{ textDecoration: 'none', color: 'inherit' }}>
-              Smart Segment
+              Smart Segments
             </Link>
           </Typography>
           <Button
@@ -55,7 +55,7 @@ export default function Layout({ children }: LayoutProps) {
       <Box component="footer" sx={{ py: 3, bgcolor: 'background.paper' }}>
         <Container maxWidth="lg">
           <Typography variant="body2" color="text.secondary" align="center">
-            © {new Date().getFullYear()} Smart Segment. All rights reserved.
+            © {new Date().getFullYear()} Smart Segments. All rights reserved.
           </Typography>
         </Container>
       </Box>

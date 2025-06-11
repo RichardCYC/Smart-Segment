@@ -1,6 +1,6 @@
-# Smart Segment Frontend
+# Smart Segments Frontend
 
-This is the frontend application for Smart Segment, built with Next.js and Material-UI.
+This is the frontend application for Smart Segments, built with Next.js and Material-UI.
 
 ## Features
 

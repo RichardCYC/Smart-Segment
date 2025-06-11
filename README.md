@@ -1,4 +1,4 @@
-# Smart Segment
+# Smart Segments
 
 A web-based tool for analyzing and optimizing feature segmentation in CSV files for binary classification tasks.
 

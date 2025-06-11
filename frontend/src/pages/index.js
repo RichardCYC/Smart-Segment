@@ -99,17 +99,17 @@ export default function Home() {
   return (
     <Layout>
       <SEO
-        title="Smart Segment - AI-Powered Customer Segmentation Tool"
-        description="Transform your customer data into actionable insights with Smart Segment's AI-powered segmentation tool. Get started for free today."
+        title="Smart Segments - AI-Powered Customer Segmentation Tool"
+        description="Transform your customer data into actionable insights with Smart Segments's AI-powered segmentation tool. Get started for free today."
         canonical="/"
       />
       <Container maxWidth="lg">
         <Box sx={{ my: 4 }}>
           <Typography variant="h4" component="h1" gutterBottom align="center">
-            Smart Segment
+            Smart Segments
           </Typography>
           <Typography variant="body1" align="center" color="text.secondary" sx={{ mb: 3 }}>
-            Smart Segment helps you analyze your CSV data and generate actionable insights and feature importance rankings.<br /><br />
+            Smart Segments helps you analyze your CSV data and generate actionable insights and feature importance rankings.<br /><br />
             <b>Step 1:</b> Please upload your CSV file to get started.
           </Typography>
 

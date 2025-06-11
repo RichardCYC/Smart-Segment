@@ -21,7 +21,7 @@ export default function ArticlesPage({ articles }: ArticlesPageProps) {
   return (
     <Layout>
       <SEO
-        title="Articles | Smart Segment"
+        title="Articles | Smart Segments"
         description="Explore our collection of articles about data segmentation, analytics, and best practices."
         canonical="/articles"
       />

@@ -1,18 +1,18 @@
 ---
-title: Getting Started with Smart Segment
-description: Learn how to use Smart Segment to analyze and segment your data effectively.
+title: Getting Started with Smart Segments
+description: Learn how to use Smart Segments to analyze and segment your data effectively.
 publishedAt: '2024-03-20'
-author: Smart Segment Team
+author: Smart Segments Team
 tags: ['guide', 'tutorial', 'data-analysis']
 ---
 
-# Getting Started with Smart Segment
+# Getting Started with Smart Segments
 
-Smart Segment is a powerful tool that helps you analyze and segment your data effectively. In this guide, we'll walk you through the basics of using Smart Segment to get the most out of your data.
+Smart Segments is a powerful tool that helps you analyze and segment your data effectively. In this guide, we'll walk you through the basics of using Smart Segments to get the most out of your data.
 
-## Why Use Smart Segment?
+## Why Use Smart Segments?
 
-Smart Segment offers several advantages:
+Smart Segments offers several advantages:
 
 - **Easy to use**: Intuitive interface for data analysis
 - **Powerful features**: Advanced segmentation capabilities
@@ -24,7 +24,7 @@ Smart Segment offers several advantages:
 1. **Upload your data**: Start by uploading your CSV file
 2. **Choose your columns**: Select the columns you want to analyze
 3. **Set parameters**: Configure your segmentation parameters
-4. **Run analysis**: Let Smart Segment process your data
+4. **Run analysis**: Let Smart Segments process your data
 5. **Review results**: Examine the segmentation results
 6. **Export data**: Download your segmented data
 
