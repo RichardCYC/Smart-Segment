@@ -4,7 +4,10 @@ import React, { useEffect } from 'react';
 
 export default function FileUpload({ onFileSelect, error }) {
   useEffect(() => {
-    console.log('FileUpload component mounted');
+    console.log('FileUpload component mounted - VERSION 3');
+    // 檢查 DOM 元素是否存在
+    const fileInput = document.getElementById('file-upload');
+    console.log('File input element:', fileInput);
   }, []);
 
   const handleFileUpload = (event) => {
@@ -54,8 +57,17 @@ export default function FileUpload({ onFileSelect, error }) {
     }
   };
 
-  const handleButtonClick = () => {
+  const handleButtonClick = (e) => {
     console.log('Button clicked');
+    e.preventDefault();
+    e.stopPropagation();
+    const fileInput = document.getElementById('file-upload');
+    if (fileInput) {
+      console.log('Found file input, triggering click');
+      fileInput.click();
+    } else {
+      console.log('File input not found');
+    }
   };
 
   return (
@@ -63,24 +75,23 @@ export default function FileUpload({ onFileSelect, error }) {
       <Typography align="center" color="text.secondary">
         Please upload a CSV file with column headers.
       </Typography>
+      <Typography align="center" color="primary" sx={{ fontWeight: 'bold' }}>
+        VERSION 3 - TEST UPDATE
+      </Typography>
       <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-        <label htmlFor="file-upload" onClick={() => console.log('Label clicked')}>
-          <Button
-            variant="contained"
-            component="span"
-            startIcon={<CloudUploadIcon />}
-            onClick={handleButtonClick}
-          >
-            Upload CSV File
-          </Button>
-        </label>
+        <Button
+          variant="contained"
+          startIcon={<CloudUploadIcon />}
+          onClick={handleButtonClick}
+        >
+          Upload CSV File
+        </Button>
         <input
           id="file-upload"
           type="file"
-          hidden
+          style={{ display: 'none' }}
           accept=".csv"
           onChange={handleFileUpload}
-          onClick={() => console.log('Input clicked')}
         />
       </Box>
       {error && (
