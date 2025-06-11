@@ -1,44 +1,15 @@
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import { Box, Button, Typography } from '@mui/material';
-import React, { useEffect, useRef } from 'react';
+import React, { useRef } from 'react';
 
 export default function FileUpload({ onFileSelect, error }) {
   const fileInputRef = useRef(null);
-  const buttonRef = useRef(null);
-
-  useEffect(() => {
-    console.log('FileUpload component mounted - VERSION 5');
-    console.log('File input ref:', fileInputRef.current);
-    console.log('Button ref:', buttonRef.current);
-
-    // 添加全局點擊事件監聽器
-    const handleGlobalClick = (e) => {
-      console.log('Global click detected:', e.target);
-    };
-    document.addEventListener('click', handleGlobalClick);
-
-    return () => {
-      document.removeEventListener('click', handleGlobalClick);
-    };
-  }, []);
 
   const handleFileUpload = (event) => {
-    console.log('handleFileUpload triggered');
-    console.log('event:', event);
-    console.log('event.target:', event.target);
-    console.log('event.target.files:', event.target.files);
-
     const file = event.target.files[0];
     if (file) {
-      console.log('File selected:', {
-        name: file.name,
-        type: file.type,
-        size: file.size
-      });
-
       // Check file type
       if (!file.name.toLowerCase().endsWith('.csv')) {
-        console.log('Invalid file type');
         onFileSelect(null, 'Only CSV files are allowed');
         return;
       }
@@ -46,73 +17,40 @@ export default function FileUpload({ onFileSelect, error }) {
       // Read CSV file header to get column names
       const reader = new FileReader();
       reader.onload = (e) => {
-        console.log('FileReader onload triggered');
         try {
           const text = e.target.result;
-          console.log('File content first line:', text.split('\n')[0]);
           const headers = text.split('\n')[0].split(',');
-          console.log('Parsed headers:', headers);
           onFileSelect(file, '', headers);
         } catch (err) {
-          console.error('Error in onload:', err);
           onFileSelect(null, 'Unable to read CSV file');
         }
       };
-      reader.onerror = (err) => {
-        console.error('FileReader error:', err);
+      reader.onerror = () => {
         onFileSelect(null, 'File reading error');
       };
-      console.log('Starting to read file');
       reader.readAsText(file);
-    } else {
-      console.log('No file selected');
     }
   };
 
   const handleButtonClick = (e) => {
-    console.log('Button clicked - VERSION 5');
     e.preventDefault();
     e.stopPropagation();
 
     if (fileInputRef.current) {
-      console.log('Found file input ref, triggering click');
-      try {
-        fileInputRef.current.click();
-      } catch (err) {
-        console.error('Error triggering file input click:', err);
-      }
-    } else {
-      console.error('File input ref not found');
+      fileInputRef.current.click();
     }
   };
 
-  const handleBoxClick = (e) => {
-    console.log('Box clicked:', e.target);
-  };
-
   return (
-    <Box
-      sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
-      onClick={handleBoxClick}
-    >
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       <Typography align="center" color="text.secondary">
         Please upload a CSV file with column headers.
       </Typography>
-      <Typography align="center" color="primary" sx={{ fontWeight: 'bold' }}>
-        VERSION 5 - TEST UPDATE
-      </Typography>
       <Box sx={{ display: 'flex', justifyContent: 'center' }}>
         <Button
-          ref={buttonRef}
           variant="contained"
           startIcon={<CloudUploadIcon />}
           onClick={handleButtonClick}
-          sx={{
-            cursor: 'pointer',
-            '&:hover': {
-              backgroundColor: 'primary.dark'
-            }
-          }}
         >
           Upload CSV File
         </Button>
