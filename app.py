@@ -65,10 +65,25 @@ app.json_encoder = NumpyEncoder  # Use custom encoder
 
 # Configuration
 ALLOWED_EXTENSIONS = {"csv"}
+MAX_ROWS = 30000  # Maximum number of rows before sampling is applied
 
 
 def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+def sample_dataframe(df: pd.DataFrame) -> tuple[pd.DataFrame, float]:
+    """
+    Sample the dataframe if it exceeds MAX_ROWS.
+    Returns the sampled dataframe and the sampling ratio used.
+    """
+    if len(df) <= MAX_ROWS:
+        print(f"No sampling needed, rows: {len(df)}")
+        return df, 1.0
+    sampling_ratio = MAX_ROWS / len(df)
+    print(f"Sampling applied: {sampling_ratio*100:.1f}% of {len(df)} rows")
+    sampled_df = df.sample(n=MAX_ROWS, random_state=42)
+    return sampled_df, sampling_ratio
 
 
 @app.before_request
@@ -102,7 +117,7 @@ def handle_error(error):
 
 
 @app.route("/api/analyze", methods=["POST"])
-def analyze_csv():
+def analyze():
     try:
         # Check if file exists
         if "file" not in request.files:
@@ -160,6 +175,10 @@ def analyze_csv():
                 ),
                 400,
             )
+
+        # Sample the dataframe if needed
+        df, sampling_ratio = sample_dataframe(df)
+        sampling_applied = sampling_ratio < 1.0
 
         # Convert to bool only when target variable is binary
         if df[target_column].nunique() == 2:
@@ -243,6 +262,10 @@ def analyze_csv():
                 "significance_level": significance_level,
                 "sort_mode": sort_mode,
                 "show_non_significant": show_non_significant,
+                "sampling_applied": sampling_applied,
+                "sampling_ratio": (
+                    round(sampling_ratio * 100, 1) if sampling_applied else 100
+                ),
             }
         )
 
@@ -456,6 +479,36 @@ def get_discrete_features():
 
     except Exception as e:
         logger.error(f"Error processing request: {str(e)}", exc_info=True)
+        return jsonify({"success": False, "error": str(e)}), 400
+
+
+@app.route("/api/check-sampling", methods=["POST"])
+def check_sampling():
+    """
+    Endpoint to check if sampling will be applied for the uploaded CSV file.
+    Returns row count, whether sampling is applied, and the sampling ratio.
+    """
+    if "file" not in request.files:
+        return jsonify({"success": False, "error": "No file uploaded"}), 400
+    file = request.files["file"]
+    if file.filename == "":
+        return jsonify({"success": False, "error": "No file selected"}), 400
+    try:
+        content = file.read().decode("utf-8")
+        row_count = sum(1 for _ in StringIO(content)) - 1  # minus header
+        sampling_applied = row_count > MAX_ROWS
+        sampling_ratio = (
+            round((MAX_ROWS / row_count) * 100, 1) if sampling_applied else 100
+        )
+        return jsonify(
+            {
+                "success": True,
+                "row_count": row_count,
+                "sampling_applied": sampling_applied,
+                "sampling_ratio": sampling_ratio,
+            }
+        )
+    except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 400
 
 

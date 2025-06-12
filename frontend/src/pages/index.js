@@ -1,6 +1,6 @@
 import Layout from '@/components/Layout';
 import SEO from '@/components/SEO';
-import { Alert, Box, Button, CircularProgress, Container, Paper, Typography } from '@mui/material';
+import { Alert, Box, Button, Container, Paper, Typography } from '@mui/material';
 import { useState } from 'react';
 import AnalysisControls from '../components/AnalysisControls';
 import FeatureResults from '../components/FeatureResults';
@@ -22,12 +22,37 @@ export default function Home() {
   const [significanceLevel, setSignificanceLevel] = useState('0.05');
   const [sortMode, setSortMode] = useState('impact');
   const [showNonSignificant, setShowNonSignificant] = useState(true);
+  const [samplingMessage, setSamplingMessage] = useState('');
 
-  const handleFileSelect = (file, error, headers) => {
+  const handleFileSelect = async (file, error, headers) => {
     setFile(file);
     setError(error);
     if (headers) {
       setColumns(headers);
+    }
+    setSamplingMessage('');
+    if (file && !error) {
+      // Check sampling info after file upload
+      const formData = new FormData();
+      formData.append('file', file);
+      try {
+        const response = await fetch(`${API_URL}/api/check-sampling`, {
+          method: 'POST',
+          body: formData,
+        });
+        const data = await response.json();
+        if (data.success) {
+          if (data.sampling_applied) {
+            setSamplingMessage(`⚠️ Dataset exceeds 30,000 rows. Will use ${data.sampling_ratio}% sample for analysis.`);
+          } else {
+            setSamplingMessage('Full dataset will be used for analysis.');
+          }
+        } else {
+          setSamplingMessage('Unable to check sampling info.');
+        }
+      } catch (e) {
+        setSamplingMessage('Unable to check sampling info.');
+      }
     }
   };
 
@@ -86,6 +111,9 @@ export default function Home() {
       const data = await response.json();
       if (data.success) {
         setResults(data.results);
+        if (data.sampling_applied) {
+          console.log('Sampling applied:', data.sampling_ratio);
+        }
       } else {
         setError(data.error || 'Error occurred during analysis');
       }
@@ -119,8 +147,13 @@ export default function Home() {
             <FileUpload onFileSelect={handleFileSelect} error={error} />
             {file && (
               <Typography align="center" color="primary" sx={{ mt: 2 }}>
-                Uploaded file: {file.name}
+                Selected file: {file.name}
               </Typography>
+            )}
+            {samplingMessage && (
+              <Box sx={{ mt: 2 }}>
+                <Alert severity="info">{samplingMessage}</Alert>
+              </Box>
             )}
           </Paper>
 
@@ -153,7 +186,7 @@ export default function Home() {
 
           {loading && (
             <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
-              <CircularProgress />
+              <Typography variant="body1" color="text.secondary">Processing...</Typography>
             </Box>
           )}
 
